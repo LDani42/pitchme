@@ -44,6 +44,9 @@ def add_custom_css():
         h1, h2, h3 {
             color: #1e3a8a;
         }
+        p, li, div {
+            color: #333333;
+        }
         .stTabs [data-baseweb="tab-list"] {
             gap: 8px;
         }
@@ -52,6 +55,7 @@ def add_custom_css():
             border-radius: 4px 4px 0px 0px;
             padding: 10px 20px;
             height: auto;
+            color: #333333;
         }
         .stTabs [aria-selected="true"] {
             background-color: #3b82f6 !important;
@@ -63,12 +67,14 @@ def add_custom_css():
             padding: 20px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
+            color: #333333;
         }
         .highlight {
             background-color: #e0f2fe;
             padding: 10px;
             border-radius: 5px;
             margin: 10px 0;
+            color: #333333;
         }
         .positive {
             color: #059669;
@@ -94,6 +100,26 @@ def add_custom_css():
             border-left: 4px solid #3b82f6;
             padding-left: 15px;
             margin: 10px 0;
+            color: #333333;
+        }
+        /* Make markdown text dark */
+        .stMarkdown {
+            color: #333333;
+        }
+        /* Make sure table text is visible */
+        table {
+            color: #333333;
+        }
+        th, td {
+            color: #333333;
+        }
+        /* Status update text color */
+        .stStatus div, .stStatus p, .stStatus span {
+            color: #333333;
+        }
+        /* Fix text color in inputs */
+        .stTextInput label, .stTextInput input, .stFileUploader label, .stFileUploader span {
+            color: #333333;
         }
     </style>
     """, unsafe_allow_html=True)
@@ -475,7 +501,13 @@ def evaluate_pitch_deck(pitch_deck_text):
         status.update(label="Identifying startup stage...")
         startup_stage_prompt = STARTUP_STAGE_PROMPT.format(pitch_deck_text=pitch_deck_text)
         startup_stage_analysis = call_claude_api(startup_stage_prompt)
+        
+        if not startup_stage_analysis:
+            st.error("Failed to get startup stage analysis. Please try again.")
+            return None
+            
         st.session_state.evaluation_results["startup_stage"] = startup_stage_analysis
+        status.update(label="✅ Startup stage identified")
         
         # Extract the stage name for use in other prompts
         lines = startup_stage_analysis.split('\n')
@@ -501,13 +533,25 @@ def evaluate_pitch_deck(pitch_deck_text):
         status.update(label="Analyzing storytelling elements...")
         story_prompt = STORY_PROMPT.format(pitch_deck_text=pitch_deck_text)
         story_analysis = call_claude_api(story_prompt)
+        
+        if not story_analysis:
+            st.error("Failed to get story analysis. Please try again.")
+            return None
+            
         st.session_state.evaluation_results["story"] = story_analysis
+        status.update(label="✅ Story analysis complete")
         
         # Evaluate market entry strategy
         status.update(label="Evaluating market entry strategy...")
         market_entry_prompt = MARKET_ENTRY_PROMPT.format(pitch_deck_text=pitch_deck_text)
         market_entry_analysis = call_claude_api(market_entry_prompt)
+        
+        if not market_entry_analysis:
+            st.error("Failed to get market entry analysis. Please try again.")
+            return None
+            
         st.session_state.evaluation_results["market_entry"] = market_entry_analysis
+        status.update(label="✅ Market entry strategy evaluated")
         
         # Extract market strategy for use in overall feedback
         lines = market_entry_analysis.split('\n')
@@ -526,19 +570,37 @@ def evaluate_pitch_deck(pitch_deck_text):
             pitch_deck_text=pitch_deck_text
         )
         scoring_analysis = call_claude_api(scoring_prompt, max_tokens=6000)
+        
+        if not scoring_analysis:
+            st.error("Failed to get scoring analysis. Please try again.")
+            return None
+            
         st.session_state.evaluation_results["scoring"] = scoring_analysis
+        status.update(label="✅ Scoring rubric applied")
         
         # Evaluate business model
         status.update(label="Evaluating business model...")
         business_model_prompt = BUSINESS_MODEL_PROMPT.format(pitch_deck_text=pitch_deck_text)
         business_model_analysis = call_claude_api(business_model_prompt, max_tokens=6000)
+        
+        if not business_model_analysis:
+            st.error("Failed to get business model analysis. Please try again.")
+            return None
+            
         st.session_state.evaluation_results["business_model"] = business_model_analysis
+        status.update(label="✅ Business model evaluated")
         
         # Get expert panel feedback
         status.update(label="Gathering expert panel feedback...")
         expert_panel_prompt = EXPERT_PANEL_PROMPT.format(pitch_deck_text=pitch_deck_text)
         expert_panel_analysis = call_claude_api(expert_panel_prompt, max_tokens=6000)
+        
+        if not expert_panel_analysis:
+            st.error("Failed to get expert panel feedback. Please try again.")
+            return None
+            
         st.session_state.evaluation_results["expert_panel"] = expert_panel_analysis
+        status.update(label="✅ Expert panel feedback gathered")
         
         # Generate overall feedback
         status.update(label="Generating overall feedback...")
@@ -548,9 +610,18 @@ def evaluate_pitch_deck(pitch_deck_text):
             pitch_deck_text=pitch_deck_text
         )
         overall_feedback = call_claude_api(overall_feedback_prompt)
+        
+        if not overall_feedback:
+            st.error("Failed to get overall feedback. Please try again.")
+            return None
+            
         st.session_state.evaluation_results["overall_feedback"] = overall_feedback
+        status.update(label="✅ Overall feedback generated")
         
         status.update(label="Analysis complete!", state="complete")
+    
+    # Force a page refresh to display the results
+    st.experimental_rerun()
     
     return st.session_state.evaluation_results
 
@@ -610,7 +681,7 @@ def main():
     # Sidebar
     with st.sidebar:
         st.image("https://img.icons8.com/fluency/96/000000/data-quality.png", width=80)
-        st.title("Pitch Deck Evaluator")
+        st.title("PitchMe")
         st.markdown("Upload your pitch deck to get expert evaluation on your startup's presentation.")
         
         # About section
@@ -639,13 +710,13 @@ def main():
             """)
         
         st.divider()
-        st.markdown("Made by Your Company")
+        st.markdown("Made by ProtoBots.ai")
     
     # Main content
     if "evaluation_results" not in st.session_state:
         # Initial state - show upload form
         st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-        st.title("🚀 Startup Pitch Deck Evaluator")
+        st.title("🚀 PitchMe")
         st.markdown("Get expert AI-powered feedback on your pitch deck to impress investors and secure funding.")
         st.markdown("</div>", unsafe_allow_html=True)
         
