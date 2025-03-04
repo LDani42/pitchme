@@ -27,38 +27,332 @@ if debug_mode:
     st.write(f"Anthropic module path: {inspect.getfile(anthropic)}")
     st.write(f"Available Anthropic classes: {dir(anthropic)}")
 
-# Custom CSS for better UI
+# Custom CSS for better UI with light/dark mode support
 def add_custom_css():
     st.markdown("""
     <style>
-        /* Main page */
+        /* Base styles for both light and dark mode */
         .main {
             padding: 2rem;
-            background-color: #f9fafb;
-        }
-        .stApp {
-            background-color: #f9fafb;
         }
         .block-container {
             max-width: 1200px;
             padding-top: 1rem;
         }
         
-        /* Typography */
+        /* Typography - will be overridden in dark/light specific styles */
         h1, h2, h3, h4, h5, h6 {
-            color: #1a365d;
             font-weight: 600;
             margin-bottom: 1rem;
         }
         p, li, div {
-            color: #333333;
             line-height: 1.6;
         }
         
-        /* Sidebar */
-        .css-1d391kg, .css-12oz5g7 {
-            background-color: #1a365d;
+        /* Inputs and Forms - generic styles */
+        .stTextInput input, 
+        .stFileUploader button {
+            border-radius: 4px !important;
         }
+        
+        /* Buttons - generic styles */
+        .stButton button {
+            border: none !important;
+            font-weight: 500 !important;
+            padding: 0.5rem 1.5rem !important;
+            border-radius: 4px !important;
+            transition: background-color 0.3s ease !important;
+        }
+        
+        /* Tabs - generic styles */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 0px;
+            padding-bottom: 0px;
+        }
+        .stTabs [data-baseweb="tab"] {
+            border-radius: 4px 4px 0px 0px;
+            padding: 10px 16px;
+            height: auto;
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-right: 4px;
+        }
+        .stTabs [data-baseweb="tab-panel"] {
+            padding: 20px 5px;
+        }
+        
+        /* Custom card - generic styles */
+        .custom-card {
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        /* Highlight and recommendation - generic styles */
+        .highlight {
+            padding: 16px;
+            border-radius: 6px;
+            margin: 16px 0;
+        }
+        .recommendation {
+            padding-left: 15px;
+            margin: 16px 0;
+        }
+        
+        /* Tables - generic styles */
+        table {
+            border-collapse: collapse;
+            margin: 20px 0;
+            width: 100%;
+        }
+        th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 16px;
+        }
+        
+        /* Expanders - generic styles */
+        .streamlit-expanderHeader {
+            border-radius: 6px;
+            padding: 10px 15px;
+            font-weight: 600;
+        }
+        .streamlit-expanderContent {
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            padding: 15px;
+        }
+        
+        /* Light mode specific styles */
+        [data-theme="light"] {
+            background-color: #f9fafb;
+        }
+        [data-theme="light"] h1, 
+        [data-theme="light"] h2, 
+        [data-theme="light"] h3, 
+        [data-theme="light"] h4, 
+        [data-theme="light"] h5, 
+        [data-theme="light"] h6 {
+            color: #1a365d;
+        }
+        [data-theme="light"] p, 
+        [data-theme="light"] li, 
+        [data-theme="light"] div {
+            color: #333333;
+        }
+        [data-theme="light"] .stTextInput label, 
+        [data-theme="light"] .stTextInput span, 
+        [data-theme="light"] .stFileUploader label, 
+        [data-theme="light"] .stFileUploader span {
+            color: #333333 !important;
+        }
+        [data-theme="light"] .stTextInput input, 
+        [data-theme="light"] .stFileUploader button {
+            color: #333333 !important;
+            background-color: #ffffff !important;
+            border-color: #cfd7df !important;
+        }
+        [data-theme="light"] .stButton button {
+            background-color: #2a70ba !important;
+            color: white !important;
+        }
+        [data-theme="light"] .stButton button:hover {
+            background-color: #1a5ba6 !important;
+        }
+        [data-theme="light"] .stTabs [data-baseweb="tab-list"] {
+            border-bottom: 1px solid #e2e8f0;
+        }
+        [data-theme="light"] .stTabs [data-baseweb="tab"] {
+            background-color: #f8fafc;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            border-bottom: none;
+        }
+        [data-theme="light"] .stTabs [aria-selected="true"] {
+            background-color: #2a70ba !important;
+            color: white !important;
+            border-color: #2a70ba !important;
+        }
+        [data-theme="light"] .custom-card {
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            color: #333333;
+            border: 1px solid #e5e7eb;
+        }
+        [data-theme="light"] .highlight {
+            background-color: #f0f7ff;
+            color: #333333;
+            border: 1px solid #d1e2ff;
+        }
+        [data-theme="light"] .positive {
+            color: #047857;
+        }
+        [data-theme="light"] .negative {
+            color: #b91c1c;
+        }
+        [data-theme="light"] .stProgress .st-ey {
+            background-color: #2a70ba;
+        }
+        [data-theme="light"] .score-pill {
+            background-color: #2a70ba;
+            color: white;
+        }
+        [data-theme="light"] .recommendation {
+            border-left: 4px solid #2a70ba;
+            color: #333333;
+        }
+        [data-theme="light"] .stStatus {
+            background-color: white;
+            border: 1px solid #e5e7eb;
+        }
+        [data-theme="light"] .stStatus div, 
+        [data-theme="light"] .stStatus p, 
+        [data-theme="light"] .stStatus span {
+            color: #333333 !important;
+        }
+        [data-theme="light"] table {
+            color: #333333;
+            border: 1px solid #e5e7eb;
+        }
+        [data-theme="light"] th {
+            background-color: #f0f7ff;
+            color: #1a365d;
+            border: 1px solid #d1e2ff;
+        }
+        [data-theme="light"] td {
+            color: #333333;
+            border: 1px solid #e5e7eb;
+        }
+        [data-theme="light"] .streamlit-expanderHeader {
+            background-color: #f0f7ff;
+            color: #1a365d !important;
+        }
+        [data-theme="light"] .streamlit-expanderContent {
+            background-color: white;
+            color: #333333;
+            border: 1px solid #e5e7eb;
+        }
+        [data-theme="light"] .stMarkdown {
+            color: #333333;
+        }
+        
+        /* Dark mode specific styles */
+        [data-theme="dark"] {
+            background-color: #1e1e1e;
+        }
+        [data-theme="dark"] h1, 
+        [data-theme="dark"] h2, 
+        [data-theme="dark"] h3, 
+        [data-theme="dark"] h4, 
+        [data-theme="dark"] h5, 
+        [data-theme="dark"] h6 {
+            color: #81b3ff;
+        }
+        [data-theme="dark"] p, 
+        [data-theme="dark"] li, 
+        [data-theme="dark"] div {
+            color: #e0e0e0;
+        }
+        [data-theme="dark"] .stTextInput label, 
+        [data-theme="dark"] .stTextInput span, 
+        [data-theme="dark"] .stFileUploader label, 
+        [data-theme="dark"] .stFileUploader span {
+            color: #e0e0e0 !important;
+        }
+        [data-theme="dark"] .stTextInput input, 
+        [data-theme="dark"] .stFileUploader button {
+            color: #e0e0e0 !important;
+            background-color: #2d2d2d !important;
+            border-color: #555555 !important;
+        }
+        [data-theme="dark"] .stButton button {
+            background-color: #4d8bdd !important;
+            color: white !important;
+        }
+        [data-theme="dark"] .stButton button:hover {
+            background-color: #5d9bef !important;
+        }
+        [data-theme="dark"] .stTabs [data-baseweb="tab-list"] {
+            border-bottom: 1px solid #444444;
+        }
+        [data-theme="dark"] .stTabs [data-baseweb="tab"] {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+            border: 1px solid #444444;
+            border-bottom: none;
+        }
+        [data-theme="dark"] .stTabs [aria-selected="true"] {
+            background-color: #4d8bdd !important;
+            color: white !important;
+            border-color: #4d8bdd !important;
+        }
+        [data-theme="dark"] .custom-card {
+            background-color: #2d2d2d;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            color: #e0e0e0;
+            border: 1px solid #444444;
+        }
+        [data-theme="dark"] .highlight {
+            background-color: #2d3748;
+            color: #e0e0e0;
+            border: 1px solid #4a5568;
+        }
+        [data-theme="dark"] .positive {
+            color: #68d391;
+        }
+        [data-theme="dark"] .negative {
+            color: #fc8181;
+        }
+        [data-theme="dark"] .stProgress .st-ey {
+            background-color: #4d8bdd;
+        }
+        [data-theme="dark"] .score-pill {
+            background-color: #4d8bdd;
+            color: white;
+        }
+        [data-theme="dark"] .recommendation {
+            border-left: 4px solid #4d8bdd;
+            color: #e0e0e0;
+        }
+        [data-theme="dark"] .stStatus {
+            background-color: #2d2d2d;
+            border: 1px solid #444444;
+        }
+        [data-theme="dark"] .stStatus div, 
+        [data-theme="dark"] .stStatus p, 
+        [data-theme="dark"] .stStatus span {
+            color: #e0e0e0 !important;
+        }
+        [data-theme="dark"] table {
+            color: #e0e0e0;
+            border: 1px solid #444444;
+        }
+        [data-theme="dark"] th {
+            background-color: #2d3748;
+            color: #81b3ff;
+            border: 1px solid #4a5568;
+        }
+        [data-theme="dark"] td {
+            color: #e0e0e0;
+            border: 1px solid #444444;
+        }
+        [data-theme="dark"] .streamlit-expanderHeader {
+            background-color: #2d3748;
+            color: #81b3ff !important;
+        }
+        [data-theme="dark"] .streamlit-expanderContent {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+            border: 1px solid #444444;
+        }
+        [data-theme="dark"] .stMarkdown {
+            color: #e0e0e0;
+        }
+        
+        /* Sidebar styles - need special handling for dark mode */
         [data-testid="stSidebar"] {
             background-color: #1a365d;
             padding-top: 1.5rem;
@@ -70,7 +364,8 @@ def add_custom_css():
         [data-testid="stSidebar"] h4, 
         [data-testid="stSidebar"] span,
         [data-testid="stSidebar"] a,
-        [data-testid="stSidebar"] .stMarkdown {
+        [data-testid="stSidebar"] .stMarkdown,
+        [data-testid="stSidebar"] div {
             color: #ffffff !important;
         }
         [data-testid="stSidebar"] .stMarkdown {
@@ -85,177 +380,10 @@ def add_custom_css():
             padding-bottom: 0.8rem;
             border-bottom: 1px solid rgba(255,255,255,0.2);
         }
-        
-        /* Inputs and Forms */
-        .stTextInput label, 
-        .stTextInput span, 
-        .stFileUploader label, 
-        .stFileUploader span {
-            color: #333333 !important;
+        [data-testid="stSidebar"] hr {
+            margin: 1.5rem 0;
+            border-color: rgba(255,255,255,0.1);
         }
-        .stTextInput input, 
-        .stFileUploader button {
-            color: #333333 !important;
-            background-color: #ffffff !important;
-            border-color: #cfd7df !important;
-            border-radius: 4px !important;
-        }
-        
-        /* Buttons */
-        .stButton button {
-            background-color: #2a70ba !important;
-            color: white !important;
-            border: none !important;
-            font-weight: 500 !important;
-            padding: 0.5rem 1.5rem !important;
-            border-radius: 4px !important;
-            transition: background-color 0.3s ease !important;
-        }
-        .stButton button:hover {
-            background-color: #1a5ba6 !important;
-        }
-        
-        /* Tabs */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 0px;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 0px;
-        }
-        .stTabs [data-baseweb="tab"] {
-            background-color: #f8fafc;
-            border-radius: 4px 4px 0px 0px;
-            padding: 10px 16px;
-            height: auto;
-            color: #475569;
-            font-weight: 500;
-            font-size: 0.9rem;
-            border: 1px solid #e2e8f0;
-            border-bottom: none;
-            margin-right: 4px;
-        }
-        .stTabs [aria-selected="true"] {
-            background-color: #2a70ba !important;
-            color: white !important;
-            border-color: #2a70ba !important;
-        }
-        .stTabs [data-baseweb="tab-panel"] {
-            padding: 20px 5px;
-        }
-        
-        /* Cards */
-        .custom-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 25px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            margin-bottom: 25px;
-            color: #333333;
-            border: 1px solid #e5e7eb;
-        }
-        
-        /* Content Elements */
-        .highlight {
-            background-color: #f0f7ff;
-            padding: 16px;
-            border-radius: 6px;
-            margin: 16px 0;
-            color: #333333;
-            border: 1px solid #d1e2ff;
-        }
-        .positive {
-            color: #047857;
-            font-weight: 500;
-        }
-        .negative {
-            color: #b91c1c;
-            font-weight: 500;
-        }
-        
-        /* Progress and Status */
-        .stProgress .st-ey {
-            background-color: #2a70ba;
-        }
-        .score-pill {
-            background-color: #2a70ba;
-            color: white;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-weight: bold;
-            display: inline-block;
-            margin-left: 10px;
-        }
-        .recommendation {
-            border-left: 4px solid #2a70ba;
-            padding-left: 15px;
-            margin: 16px 0;
-            color: #333333;
-        }
-        
-        /* Status elements */
-        .stStatus {
-            background-color: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 10px;
-        }
-        .stStatus div, .stStatus p, .stStatus span {
-            color: #333333 !important;
-        }
-        
-        /* Tables */
-        table {
-            color: #333333;
-            border-collapse: collapse;
-            border: 1px solid #e5e7eb;
-            margin: 20px 0;
-            width: 100%;
-        }
-        th {
-            background-color: #f0f7ff;
-            color: #1a365d;
-            padding: 12px 16px;
-            border: 1px solid #d1e2ff;
-            text-align: left;
-            font-weight: 600;
-        }
-        td {
-            color: #333333;
-            padding: 12px 16px;
-            border: 1px solid #e5e7eb;
-        }
-        
-        /* Expanders */
-        .streamlit-expanderHeader {
-            background-color: #f0f7ff;
-            color: #1a365d !important;
-            border-radius: 6px;
-            padding: 10px 15px;
-            font-weight: 600;
-        }
-        .streamlit-expanderContent {
-            background-color: white;
-            color: #333333;
-            border: 1px solid #e5e7eb;
-            border-top: none;
-            border-radius: 0 0 6px 6px;
-            padding: 15px;
-        }
-        
-        /* Markdown */
-        .stMarkdown {
-            color: #333333;
-        }
-        
-        /* Code blocks */
-        .stCodeBlock {
-            background-color: #1a1a1a;
-            border-radius: 6px;
-        }
-        .stCodeBlock code {
-            color: #f0f0f0;
-        }
-        
-        /* Sidebar expander */
         [data-testid="stSidebar"] .streamlit-expanderHeader {
             background-color: #2a5082;
             color: white !important;
@@ -270,14 +398,6 @@ def add_custom_css():
         [data-testid="stSidebar"] .streamlit-expanderContent li {
             color: white !important;
         }
-        
-        /* Divider */
-        [data-testid="stSidebar"] hr {
-            margin: 1.5rem 0;
-            border-color: rgba(255,255,255,0.1);
-        }
-        
-        /* Make sure information icon has good contrast */
         [data-testid="stSidebar"] .stExpander svg {
             fill: white;
         }
