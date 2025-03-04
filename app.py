@@ -31,64 +31,122 @@ if debug_mode:
 def add_custom_css():
     st.markdown("""
     <style>
+        /* Main page */
         .main {
             padding: 2rem;
+            background-color: #f9fafb;
         }
         .stApp {
-            background-color: #f8f9fa;
+            background-color: #f9fafb;
         }
         .block-container {
             max-width: 1200px;
             padding-top: 2rem;
         }
-        h1, h2, h3 {
-            color: #1e3a8a;
+        
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            color: #1a365d;
+            font-weight: 600;
         }
         p, li, div {
             color: #333333;
         }
+        
+        /* Sidebar */
+        .css-1d391kg, .css-12oz5g7 {
+            background-color: #1a365d;
+        }
+        [data-testid="stSidebar"] {
+            background-color: #1a365d;
+        }
+        [data-testid="stSidebar"] p, 
+        [data-testid="stSidebar"] h1, 
+        [data-testid="stSidebar"] h2, 
+        [data-testid="stSidebar"] h3, 
+        [data-testid="stSidebar"] h4, 
+        [data-testid="stSidebar"] span,
+        [data-testid="stSidebar"] a,
+        [data-testid="stSidebar"] .stMarkdown {
+            color: #ffffff !important;
+        }
+        
+        /* Inputs and Forms */
+        .stTextInput label, 
+        .stTextInput span, 
+        .stFileUploader label, 
+        .stFileUploader span {
+            color: #333333 !important;
+        }
+        .stTextInput input, 
+        .stFileUploader button {
+            color: #333333 !important;
+            background-color: #ffffff !important;
+            border-color: #cfd7df !important;
+        }
+        
+        /* Buttons */
+        .stButton button {
+            background-color: #2a70ba !important;
+            color: white !important;
+            border: none !important;
+            font-weight: 500 !important;
+        }
+        .stButton button:hover {
+            background-color: #1a5ba6 !important;
+        }
+        
+        /* Tabs */
         .stTabs [data-baseweb="tab-list"] {
             gap: 8px;
         }
         .stTabs [data-baseweb="tab"] {
-            background-color: #f1f5f9;
+            background-color: #dfe5ed;
             border-radius: 4px 4px 0px 0px;
             padding: 10px 20px;
             height: auto;
             color: #333333;
         }
         .stTabs [aria-selected="true"] {
-            background-color: #3b82f6 !important;
+            background-color: #2a70ba !important;
             color: white !important;
         }
+        
+        /* Cards */
         .custom-card {
             background-color: white;
             border-radius: 10px;
             padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             margin-bottom: 20px;
             color: #333333;
+            border: 1px solid #e5e7eb;
         }
+        
+        /* Content Elements */
         .highlight {
-            background-color: #e0f2fe;
+            background-color: #f0f7ff;
             padding: 10px;
             border-radius: 5px;
             margin: 10px 0;
             color: #333333;
+            border: 1px solid #d1e2ff;
         }
         .positive {
-            color: #059669;
+            color: #047857;
             font-weight: 500;
         }
         .negative {
-            color: #dc2626;
+            color: #b91c1c;
             font-weight: 500;
         }
+        
+        /* Progress and Status */
         .stProgress .st-ey {
-            background-color: #3b82f6;
+            background-color: #2a70ba;
         }
         .score-pill {
-            background-color: #3b82f6;
+            background-color: #2a70ba;
             color: white;
             padding: 4px 10px;
             border-radius: 20px;
@@ -97,29 +155,73 @@ def add_custom_css():
             margin-left: 10px;
         }
         .recommendation {
-            border-left: 4px solid #3b82f6;
+            border-left: 4px solid #2a70ba;
             padding-left: 15px;
             margin: 10px 0;
             color: #333333;
         }
-        /* Make markdown text dark */
+        
+        /* Status elements */
+        .stStatus div, .stStatus p, .stStatus span {
+            color: #333333 !important;
+        }
+        
+        /* Tables */
+        table {
+            color: #333333;
+            border-collapse: collapse;
+        }
+        th {
+            background-color: #f0f7ff;
+            color: #1a365d;
+            padding: 8px 12px;
+            border: 1px solid #d1e2ff;
+        }
+        td {
+            color: #333333;
+            padding: 8px 12px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        /* Expanders */
+        .streamlit-expanderHeader {
+            background-color: #f0f7ff;
+            color: #1a365d !important;
+            border-radius: 4px;
+        }
+        .streamlit-expanderContent {
+            background-color: white;
+            color: #333333;
+            border: 1px solid #e5e7eb;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+        }
+        
+        /* Markdown */
         .stMarkdown {
             color: #333333;
         }
-        /* Make sure table text is visible */
-        table {
-            color: #333333;
+        
+        /* Code blocks */
+        .stCodeBlock {
+            background-color: #1a1a1a;
         }
-        th, td {
-            color: #333333;
+        .stCodeBlock code {
+            color: #f0f0f0;
         }
-        /* Status update text color */
-        .stStatus div, .stStatus p, .stStatus span {
-            color: #333333;
+        
+        /* Sidebar expander */
+        [data-testid="stSidebar"] .streamlit-expanderHeader {
+            background-color: #2a5082;
+            color: white !important;
         }
-        /* Fix text color in inputs */
-        .stTextInput label, .stTextInput input, .stFileUploader label, .stFileUploader span {
-            color: #333333;
+        [data-testid="stSidebar"] .streamlit-expanderContent {
+            background-color: #1a365d;
+            border: none;
+        }
+        [data-testid="stSidebar"] .streamlit-expanderContent p,
+        [data-testid="stSidebar"] .streamlit-expanderContent li {
+            color: white !important;
         }
     </style>
     """, unsafe_allow_html=True)
