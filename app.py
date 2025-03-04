@@ -900,8 +900,16 @@ def evaluate_pitch_deck(pitch_deck_text):
         
         status.update(label="Analysis complete!", state="complete")
     
-    # Force a page refresh to display the results
-    st.experimental_rerun()
+    # Use st.rerun() instead of the deprecated st.experimental_rerun()
+    try:
+        st.rerun()
+    except Exception as e:
+        # For backwards compatibility with older Streamlit versions
+        try:
+            st.experimental_rerun()
+        except Exception as e:
+            # If both fail, just return the results - the page will update on the next interaction
+            st.success("Analysis complete! Please click on the tabs to view your evaluation.")
     
     return st.session_state.evaluation_results
 
@@ -1057,7 +1065,14 @@ def main():
             # Clear the session state and rerun the script
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
-            st.experimental_rerun()
+            try:
+                st.rerun()
+            except Exception as e:
+                try:
+                    st.experimental_rerun()
+                except Exception as e:
+                    st.info("Please refresh the page to evaluate another pitch deck.")
+                    st.stop()
 
 if __name__ == "__main__":
     main()
