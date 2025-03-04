@@ -9,6 +9,7 @@ import time
 import pandas as pd
 import base64
 import sys
+import inspect
 
 # This MUST be the first Streamlit command
 st.set_page_config(
@@ -17,6 +18,14 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Debug information about the Anthropic library
+debug_mode = False
+if debug_mode:
+    # This is safe to run after st.set_page_config
+    st.write(f"Anthropic version: {anthropic.__version__ if hasattr(anthropic, '__version__') else 'unknown'}")
+    st.write(f"Anthropic module path: {inspect.getfile(anthropic)}")
+    st.write(f"Available Anthropic classes: {dir(anthropic)}")
 
 # Custom CSS for better UI
 def add_custom_css():
@@ -117,7 +126,17 @@ def get_anthropic_client():
             st.write("Debug info: Available secrets keys:", list(st.secrets.keys()) if hasattr(st.secrets, "keys") else "No secrets accessible")
         st.stop()
     
-    return anthropic.Anthropic(api_key=api_key)
+    # Initialize the client with just the API key to avoid compatibility issues
+    try:
+        # First try the simpler initialization that works with newer versions
+        return anthropic.Anthropic(api_key=api_key)
+    except TypeError:
+        # If that fails, try with the older API
+        try:
+            return anthropic.Client(api_key=api_key)
+        except Exception as e:
+            st.error(f"Could not initialize Anthropic client (older method): {str(e)}")
+            raise
 
 try:
     client = get_anthropic_client()
@@ -422,16 +441,29 @@ RUBRIC_QUESTIONS = {
 # Function to call Claude API
 def call_claude_api(prompt, max_tokens=4000):
     try:
-        message = client.messages.create(
-            model="claude-3-5-sonnet-20240620",
-            max_tokens=max_tokens,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return message.content[0].text
+        # Check if we're using the newer API (Anthropic 0.7.0+)
+        if hasattr(client, 'messages'):
+            message = client.messages.create(
+                model="claude-3-5-sonnet-20240620",
+                max_tokens=max_tokens,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            return message.content[0].text
+        # Otherwise use the older API
+        else:
+            response = client.completion(
+                prompt=f"\n\nHuman: {prompt}\n\nAssistant:",
+                model="claude-3-5-sonnet-20240620",
+                max_tokens_to_sample=max_tokens,
+                stop_sequences=["\n\nHuman:"]
+            )
+            return response.completion
     except Exception as e:
         st.error(f"Error calling Claude API: {str(e)}")
+        import traceback
+        st.code(traceback.format_exc())
         return None
 
 # Function to create and evaluate a pitch deck
