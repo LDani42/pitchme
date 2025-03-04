@@ -10,21 +10,13 @@ import pandas as pd
 import base64
 import sys
 
-# Display environment information for debugging
-st.write(f"Python version: {sys.version}")
-st.write(f"Anthropic version: {anthropic.__version__}")
-st.write(f"Working directory: {os.getcwd()}")
-
-# Set page configuration - this needs to be the very first Streamlit command
+# This MUST be the first Streamlit command
 st.set_page_config(
     page_title="Pitch Deck Evaluator",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-# Debug information
-st.write("App is starting...")
 
 # Custom CSS for better UI
 def add_custom_css():
@@ -99,6 +91,14 @@ def add_custom_css():
 
 add_custom_css()
 
+# Now we can have debug info after the page config
+debug_mode = False
+
+if debug_mode:
+    st.write(f"Python version: {sys.version}")
+    st.write(f"Anthropic version: {anthropic.__version__}")
+    st.write(f"Working directory: {os.getcwd()}")
+
 # Create Anthropic client
 @st.cache_resource
 def get_anthropic_client():
@@ -107,19 +107,22 @@ def get_anthropic_client():
         try:
             api_key = st.secrets["ANTHROPIC_API_KEY"]
         except Exception as e:
-            st.error(f"Error accessing secrets: {str(e)}")
+            if debug_mode:
+                st.error(f"Error accessing secrets: {str(e)}")
             api_key = None
     
     if not api_key:
         st.error("ANTHROPIC_API_KEY not found. Please set it in your environment variables or Streamlit secrets.")
-        st.write("Debug info: Available secrets keys:", list(st.secrets.keys()) if hasattr(st.secrets, "keys") else "No secrets accessible")
+        if debug_mode:
+            st.write("Debug info: Available secrets keys:", list(st.secrets.keys()) if hasattr(st.secrets, "keys") else "No secrets accessible")
         st.stop()
     
     return anthropic.Anthropic(api_key=api_key)
 
 try:
     client = get_anthropic_client()
-    st.write("Anthropic client initialized successfully")
+    if debug_mode:
+        st.write("Anthropic client initialized successfully")
 except Exception as e:
     st.error(f"Failed to initialize Anthropic client: {str(e)}")
     st.stop()
@@ -572,16 +575,11 @@ def display_evaluation_results(results):
 
 # UI for the app
 def main():
-    st.write("Entering main function...")
     # Sidebar
     with st.sidebar:
-        try:
-            st.image("https://img.icons8.com/fluency/96/000000/data-quality.png", width=80)
-            st.title("Pitch Deck Evaluator")
-            st.markdown("Upload your pitch deck to get expert evaluation on your startup's presentation.")
-            st.write("Sidebar rendered successfully")
-        except Exception as e:
-            st.error(f"Error rendering sidebar: {str(e)}")
+        st.image("https://img.icons8.com/fluency/96/000000/data-quality.png", width=80)
+        st.title("Pitch Deck Evaluator")
+        st.markdown("Upload your pitch deck to get expert evaluation on your startup's presentation.")
         
         # About section
         with st.expander("ℹ️ About this app"):
@@ -673,11 +671,5 @@ def main():
                 del st.session_state[key]
             st.experimental_rerun()
 
-try:
-    st.write("Starting app...")
-    if __name__ == "__main__":
-        main()
-except Exception as e:
-    st.error(f"Critical application error: {str(e)}")
-    import traceback
-    st.code(traceback.format_exc())
+if __name__ == "__main__":
+    main()
