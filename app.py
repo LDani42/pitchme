@@ -41,16 +41,18 @@ def add_custom_css():
         }
         .block-container {
             max-width: 1200px;
-            padding-top: 2rem;
+            padding-top: 1rem;
         }
         
         /* Typography */
         h1, h2, h3, h4, h5, h6 {
             color: #1a365d;
             font-weight: 600;
+            margin-bottom: 1rem;
         }
         p, li, div {
             color: #333333;
+            line-height: 1.6;
         }
         
         /* Sidebar */
@@ -59,6 +61,7 @@ def add_custom_css():
         }
         [data-testid="stSidebar"] {
             background-color: #1a365d;
+            padding-top: 1.5rem;
         }
         [data-testid="stSidebar"] p, 
         [data-testid="stSidebar"] h1, 
@@ -69,6 +72,18 @@ def add_custom_css():
         [data-testid="stSidebar"] a,
         [data-testid="stSidebar"] .stMarkdown {
             color: #ffffff !important;
+        }
+        [data-testid="stSidebar"] .stMarkdown {
+            margin-bottom: 1.5rem;
+        }
+        [data-testid="stSidebar"] [data-testid="stImage"] {
+            margin-bottom: 1rem;
+        }
+        [data-testid="stSidebar"] h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.8rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
         }
         
         /* Inputs and Forms */
@@ -83,6 +98,7 @@ def add_custom_css():
             color: #333333 !important;
             background-color: #ffffff !important;
             border-color: #cfd7df !important;
+            border-radius: 4px !important;
         }
         
         /* Buttons */
@@ -91,6 +107,9 @@ def add_custom_css():
             color: white !important;
             border: none !important;
             font-weight: 500 !important;
+            padding: 0.5rem 1.5rem !important;
+            border-radius: 4px !important;
+            transition: background-color 0.3s ease !important;
         }
         .stButton button:hover {
             background-color: #1a5ba6 !important;
@@ -98,27 +117,38 @@ def add_custom_css():
         
         /* Tabs */
         .stTabs [data-baseweb="tab-list"] {
-            gap: 8px;
+            gap: 0px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0px;
         }
         .stTabs [data-baseweb="tab"] {
-            background-color: #dfe5ed;
+            background-color: #f8fafc;
             border-radius: 4px 4px 0px 0px;
-            padding: 10px 20px;
+            padding: 10px 16px;
             height: auto;
-            color: #333333;
+            color: #475569;
+            font-weight: 500;
+            font-size: 0.9rem;
+            border: 1px solid #e2e8f0;
+            border-bottom: none;
+            margin-right: 4px;
         }
         .stTabs [aria-selected="true"] {
             background-color: #2a70ba !important;
             color: white !important;
+            border-color: #2a70ba !important;
+        }
+        .stTabs [data-baseweb="tab-panel"] {
+            padding: 20px 5px;
         }
         
         /* Cards */
         .custom-card {
             background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            margin-bottom: 20px;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
             color: #333333;
             border: 1px solid #e5e7eb;
         }
@@ -126,9 +156,9 @@ def add_custom_css():
         /* Content Elements */
         .highlight {
             background-color: #f0f7ff;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
+            padding: 16px;
+            border-radius: 6px;
+            margin: 16px 0;
             color: #333333;
             border: 1px solid #d1e2ff;
         }
@@ -157,11 +187,17 @@ def add_custom_css():
         .recommendation {
             border-left: 4px solid #2a70ba;
             padding-left: 15px;
-            margin: 10px 0;
+            margin: 16px 0;
             color: #333333;
         }
         
         /* Status elements */
+        .stStatus {
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px;
+        }
         .stStatus div, .stStatus p, .stStatus span {
             color: #333333 !important;
         }
@@ -170,16 +206,21 @@ def add_custom_css():
         table {
             color: #333333;
             border-collapse: collapse;
+            border: 1px solid #e5e7eb;
+            margin: 20px 0;
+            width: 100%;
         }
         th {
             background-color: #f0f7ff;
             color: #1a365d;
-            padding: 8px 12px;
+            padding: 12px 16px;
             border: 1px solid #d1e2ff;
+            text-align: left;
+            font-weight: 600;
         }
         td {
             color: #333333;
-            padding: 8px 12px;
+            padding: 12px 16px;
             border: 1px solid #e5e7eb;
         }
         
@@ -187,14 +228,17 @@ def add_custom_css():
         .streamlit-expanderHeader {
             background-color: #f0f7ff;
             color: #1a365d !important;
-            border-radius: 4px;
+            border-radius: 6px;
+            padding: 10px 15px;
+            font-weight: 600;
         }
         .streamlit-expanderContent {
             background-color: white;
             color: #333333;
             border: 1px solid #e5e7eb;
             border-top: none;
-            border-radius: 0 0 4px 4px;
+            border-radius: 0 0 6px 6px;
+            padding: 15px;
         }
         
         /* Markdown */
@@ -205,6 +249,7 @@ def add_custom_css():
         /* Code blocks */
         .stCodeBlock {
             background-color: #1a1a1a;
+            border-radius: 6px;
         }
         .stCodeBlock code {
             color: #f0f0f0;
@@ -214,14 +259,27 @@ def add_custom_css():
         [data-testid="stSidebar"] .streamlit-expanderHeader {
             background-color: #2a5082;
             color: white !important;
+            border: none;
         }
         [data-testid="stSidebar"] .streamlit-expanderContent {
             background-color: #1a365d;
             border: none;
+            padding: 1px 15px 15px 15px;
         }
         [data-testid="stSidebar"] .streamlit-expanderContent p,
         [data-testid="stSidebar"] .streamlit-expanderContent li {
             color: white !important;
+        }
+        
+        /* Divider */
+        [data-testid="stSidebar"] hr {
+            margin: 1.5rem 0;
+            border-color: rgba(255,255,255,0.1);
+        }
+        
+        /* Make sure information icon has good contrast */
+        [data-testid="stSidebar"] .stExpander svg {
+            fill: white;
         }
     </style>
     """, unsafe_allow_html=True)
@@ -730,9 +788,14 @@ def evaluate_pitch_deck(pitch_deck_text):
 # Function to display evaluation results in tabs
 def display_evaluation_results(results):
     startup_name = st.session_state.get("startup_name", "Your Startup")
-    st.markdown(f"# Pitch Deck Evaluation for **{startup_name}**")
     
-    # Create tabs for each evaluation section
+    # Use the startup name in the title if provided, otherwise use a generic title
+    if startup_name and startup_name.strip() != "":
+        st.markdown(f"<h1 style='color: #1a365d; margin-bottom: 25px;'>Pitch Deck Evaluation</h1>", unsafe_allow_html=True)
+    else:
+        st.markdown("<h1 style='color: #1a365d; margin-bottom: 25px;'>Pitch Deck Evaluation</h1>", unsafe_allow_html=True)
+    
+    # Create tabs for each evaluation section with better icons
     tabs = st.tabs([
         "📖 Story Analysis", 
         "🚀 Startup Stage", 
@@ -745,37 +808,37 @@ def display_evaluation_results(results):
     
     # Story Analysis Tab
     with tabs[0]:
-        st.markdown("## Story Analysis")
+        st.markdown("<h2 style='color: #1a365d; margin-top: 10px;'>Story Analysis</h2>", unsafe_allow_html=True)
         st.markdown(results["story"])
     
     # Startup Stage Tab
     with tabs[1]:
-        st.markdown("## Startup Stage Identification")
+        st.markdown("<h2 style='color: #1a365d; margin-top: 10px;'>Startup Stage Identification</h2>", unsafe_allow_html=True)
         st.markdown(results["startup_stage"])
     
     # Market Entry Tab
     with tabs[2]:
-        st.markdown("## Market Entry Strategy")
+        st.markdown("<h2 style='color: #1a365d; margin-top: 10px;'>Market Entry Strategy</h2>", unsafe_allow_html=True)
         st.markdown(results["market_entry"])
     
     # Scoring Rubric Tab
     with tabs[3]:
-        st.markdown("## Scoring Rubric Assessment")
+        st.markdown("<h2 style='color: #1a365d; margin-top: 10px;'>Scoring Rubric Assessment</h2>", unsafe_allow_html=True)
         st.markdown(results["scoring"])
     
     # Business Model Tab
     with tabs[4]:
-        st.markdown("## Business Model Canvas Evaluation")
+        st.markdown("<h2 style='color: #1a365d; margin-top: 10px;'>Business Model Canvas Evaluation</h2>", unsafe_allow_html=True)
         st.markdown(results["business_model"])
     
     # Expert Panel Tab
     with tabs[5]:
-        st.markdown("## Expert Panel Feedback")
+        st.markdown("<h2 style='color: #1a365d; margin-top: 10px;'>Expert Panel Feedback</h2>", unsafe_allow_html=True)
         st.markdown(results["expert_panel"])
     
     # Overall Feedback Tab
     with tabs[6]:
-        st.markdown("## Overall Feedback")
+        st.markdown("<h2 style='color: #1a365d; margin-top: 10px;'>Overall Feedback</h2>", unsafe_allow_html=True)
         st.markdown(results["overall_feedback"])
 
 # UI for the app
@@ -812,21 +875,21 @@ def main():
             """)
         
         st.divider()
-        st.markdown("Made by ProtoBots.ai")
+        st.markdown("<div style='text-align: center; font-size: 0.9rem; opacity: 0.8; margin-top: 20px;'>Made by ProtoBots.ai</div>", unsafe_allow_html=True)
     
     # Main content
     if "evaluation_results" not in st.session_state:
         # Initial state - show upload form
         st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-        st.title("🚀 PitchMe")
-        st.markdown("Get expert AI-powered feedback on your pitch deck to impress investors and secure funding.")
+        st.markdown("<h1 style='color: #1a365d; margin-bottom: 20px;'>PitchMe</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='font-size: 1.1rem; margin-bottom: 25px;'>Get expert AI-powered feedback on your pitch deck to impress investors and secure funding.</p>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
         
         col1, col2 = st.columns([2, 1])
         
         with col1:
             st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-            st.markdown("### Upload Your Pitch Deck")
+            st.markdown("<h3 style='color: #1a365d; margin-bottom: 20px;'>Upload Your Pitch Deck</h3>", unsafe_allow_html=True)
             st.session_state.startup_name = st.text_input("Startup Name (Optional)", "")
             uploaded_file = st.file_uploader("Upload your pitch deck (PDF)", type="pdf")
             
@@ -842,7 +905,7 @@ def main():
         
         with col2:
             st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-            st.markdown("### What You'll Get")
+            st.markdown("<h3 style='color: #1a365d; margin-bottom: 15px;'>What You'll Get</h3>", unsafe_allow_html=True)
             st.markdown("""
             - 📖 **Story Analysis**
             - 🚀 **Startup Stage Identification**
@@ -855,7 +918,7 @@ def main():
             st.markdown("</div>", unsafe_allow_html=True)
             
             st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-            st.markdown("### Why It Matters")
+            st.markdown("<h3 style='color: #1a365d; margin-bottom: 15px;'>Why It Matters</h3>", unsafe_allow_html=True)
             st.markdown("""
             A compelling pitch deck is crucial for securing investment. Our AI evaluator helps you:
             
