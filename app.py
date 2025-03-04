@@ -448,6 +448,24 @@ def display_evaluation_results(results):
             st.header(tab["label"].split(" ", 1)[1])  # Remove emoji from header
             st.markdown(results[tab["key"]])
 
+# Safer function to rerun the app
+def safe_rerun():
+    st.success("Analysis complete! Displaying results...")
+    # Add a brief delay to ensure the success message is shown
+    import time
+    time.sleep(1)
+    
+    # Try the new rerun method first
+    try:
+        st.rerun()
+    except Exception as e1:
+        # If that fails, try the old method
+        try:
+            st.experimental_rerun()
+        except Exception as e2:
+            # If both fail, just display the results without reruns
+            st.info("Please scroll down to see your results, or refresh the page if they don't appear.")
+
 def main():
     # Sidebar
     with st.sidebar:
@@ -517,10 +535,8 @@ def main():
                             results = evaluate_pitch_deck(pitch_deck_text, analyze_design)
                             if results:
                                 st.session_state.evaluation_results = results
-                                try:
-                                    st.rerun()
-                                except:
-                                    st.experimental_rerun()
+                                # Instead of directly calling rerun, just display the results
+                                st.success("Analysis complete!")
             st.markdown("</div>", unsafe_allow_html=True)
         
         with col2:
@@ -551,13 +567,12 @@ def main():
         
         # Add a button to start over
         if st.button("Evaluate Another Pitch Deck", type="primary"):
-            # Clear the session state and rerun
+            # Clear the session state
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
-            try:
-                st.rerun()
-            except:
-                st.experimental_rerun()
+            
+            # Don't use rerun, just refresh the page
+            st.info("Please refresh the page to evaluate another pitch deck.")
 
 if __name__ == "__main__":
     main()
