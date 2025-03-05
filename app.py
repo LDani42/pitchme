@@ -94,6 +94,69 @@ Provide your response in three sections:
 {pitch_deck_text}
 """
 
+BUSINESS_MODEL_PROMPT = """
+# Role
+You are a Business Model Expert specializing in startup evaluation.
+
+# Task
+Evaluate the following pitch deck using the Business Model Canvas framework. Score each element from 0-10 (0 = not addressed, 10 = excellent).
+
+# Output Format
+For each Business Model Canvas element:
+1. Extract relevant quotes from the pitch deck
+2. Provide balanced feedback on strengths and weaknesses
+3. Offer specific recommendations in this format:
+   A: "This is good because..."
+   B: "I suggest you can improve this by..."
+   C: "Not addressed. Go out and talk to experts! Try contacting... and ask them..."
+   OR
+   C: "Not addressed. How does your competitor's business or financial model address..."
+
+Include these elements in your evaluation:
+- Customer Segments
+- Value Propositions
+- Channels
+- Revenue Streams
+- Customer Relationships
+- Key Activities
+- Key Resources
+- Key Partners
+- Cost Structure
+
+End with a total score and summary assessment.
+
+# Pitch Deck Content
+{pitch_deck_text}
+"""
+
+EXPERT_PANEL_PROMPT = """
+# Role
+You are a Panel Moderator hosting a group of startup experts.
+
+# Task
+Simulate feedback from a panel of 5 experts reviewing the following pitch deck:
+- Product Expert: Evaluates functionality, usability, design, and product quality
+- Revenue Expert: Analyzes monetization strategies, sales, marketing, and revenue potential
+- Team Expert: Assesses skills, experience, and cohesiveness of the startup team
+- System Expert: Examines operations, processes, and systems for scalability
+- Subject Matter Expert: Provides industry-specific insights and market knowledge
+
+# Output Format
+For each expert:
+1. Identify the evaluation criteria they would focus on
+2. Extract relevant quotes from the pitch deck
+3. Provide their critical feedback, both positive and negative
+4. Offer specific recommendations in this format:
+   A: "This is good because..."
+   B: "I suggest you can improve this by..."
+   C: "Not addressed. Go out and talk to experts! Try contacting... and ask them..."
+
+End with a brief summary of the panel's overall assessment.
+
+# Pitch Deck Content
+{pitch_deck_text}
+"""
+
 OVERALL_FEEDBACK_PROMPT = """
 # Role
 You are a Startup Mentor with expertise in pitch deck evaluation and fostering a learning mindset.
@@ -355,7 +418,7 @@ def evaluate_pitch_deck(pitch_deck_text, analyze_design=False):
     status_text = st.empty()
     
     # Determine how many analyses we'll run
-    total_analyses = 4  # base analyses
+    total_analyses = 6  # Base analyses including business model and expert panel
     if analyze_design:
         total_analyses += 1
     progress_step = 100 / total_analyses
@@ -397,6 +460,30 @@ def evaluate_pitch_deck(pitch_deck_text, analyze_design=False):
         st.error("Failed to evaluate market entry strategy.")
         return None
     
+    # Business Model
+    status_text.text("Analyzing business model...")
+    business_prompt = BUSINESS_MODEL_PROMPT.format(pitch_deck_text=pitch_deck_text)
+    business_analysis = call_claude_api(business_prompt, max_tokens=6000)
+    if business_analysis:
+        results["business_model"] = business_analysis
+        current_progress += progress_step
+        progress_bar.progress(int(current_progress))
+    else:
+        st.error("Failed to analyze business model.")
+        return None
+    
+    # Expert Panel
+    status_text.text("Gathering expert panel feedback...")
+    expert_prompt = EXPERT_PANEL_PROMPT.format(pitch_deck_text=pitch_deck_text)
+    expert_analysis = call_claude_api(expert_prompt, max_tokens=6000)
+    if expert_analysis:
+        results["expert_panel"] = expert_analysis
+        current_progress += progress_step
+        progress_bar.progress(int(current_progress))
+    else:
+        st.error("Failed to gather expert panel feedback.")
+        return None
+    
     # Design Analysis (optional)
     if analyze_design:
         status_text.text("Analyzing design elements...")
@@ -431,6 +518,8 @@ def display_evaluation_results(results):
         {"label": "📖 Story Analysis", "key": "story"},
         {"label": "🚀 Startup Stage", "key": "startup_stage"},
         {"label": "🎯 Market Entry", "key": "market_entry"},
+        {"label": "💼 Business Model", "key": "business_model"},
+        {"label": "👥 Expert Panel", "key": "expert_panel"},
         {"label": "🎨 Design Analysis", "key": "design"},
         {"label": "📝 Overall Feedback", "key": "overall_feedback"}
     ]
@@ -448,24 +537,6 @@ def display_evaluation_results(results):
             st.header(tab["label"].split(" ", 1)[1])  # Remove emoji from header
             st.markdown(results[tab["key"]])
 
-# Safer function to rerun the app
-def safe_rerun():
-    st.success("Analysis complete! Displaying results...")
-    # Add a brief delay to ensure the success message is shown
-    import time
-    time.sleep(1)
-    
-    # Try the new rerun method first
-    try:
-        st.rerun()
-    except Exception as e1:
-        # If that fails, try the old method
-        try:
-            st.experimental_rerun()
-        except Exception as e2:
-            # If both fail, just display the results without reruns
-            st.info("Please scroll down to see your results, or refresh the page if they don't appear.")
-
 def main():
     # Sidebar
     with st.sidebar:
@@ -479,6 +550,8 @@ def main():
             - Storytelling effectiveness
             - Startup stage identification
             - Market entry strategy analysis
+            - Business model canvas evaluation
+            - Expert panel feedback
             - Design and visual elements (optional)
             - Overall recommendations
             
@@ -546,6 +619,8 @@ def main():
             - 📖 **Story Analysis**
             - 🚀 **Startup Stage Identification**
             - 🎯 **Market Entry Strategy Assessment**
+            - 💼 **Business Model Evaluation**
+            - 👥 **Expert Panel Feedback**
             - 🎨 **Design Analysis** (optional)
             - 📝 **Actionable Recommendations**
             """)
