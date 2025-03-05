@@ -5,11 +5,12 @@ import anthropic
 from PyPDF2 import PdfReader
 from pathlib import Path
 import time
+from fpdf import FPDF
+from io import BytesIO
 
 # This MUST be the very first Streamlit command
 st.set_page_config(
     page_title="PitchMe",
-    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -68,10 +69,7 @@ Provide your response using clear markdown formatting:
 
 ## 🚀 Current Stage
 Create a visual indicator showing where the startup is on the journey, like:
-
-```
 Ideation → [MVC] → IPR → MVP → MVR
-```
 
 Explain which stage the startup is at and justify with specific evidence from the pitch deck. Use bullet points to list the evidence.
 
@@ -83,7 +81,7 @@ Create a visual roadmap showing how to get to the next stage. Use a table format
 | Current Status | Next Milestone | Action Items |
 Include 3-5 key actions the startup should take to reach the next stage.
 
-Use bold text for important points and emojis to make the content more visually engaging.
+Use bold text for important points and emojis to make the content visually engaging.
 
 # Pitch Deck Content
 {pitch_deck_text}
@@ -116,16 +114,12 @@ Red Ocean Strategy:
 Provide your response using clear markdown formatting with visual elements:
 
 ## 🎯 Customer Segment Analysis
-Create a target diagram using ASCII art to represent how well they've identified their critical customer segment.
+Create a target diagram using GraphViz DOT language to represent how well they've identified their critical customer segment.
 
 Evaluate how well they've identified their critical customer segment, using bullet points for clarity and bold text for key insights.
 
 ## 🌊 Strategy Classification
-Create a visual representation of where they fall on the Blue Ocean vs Red Ocean spectrum, like:
-
-```
-Red Ocean [----●---] Blue Ocean
-```
+Generate a GraphViz DOT code snippet that visually represents the position on the Blue Ocean vs Red Ocean spectrum. The diagram should be a horizontal flow with nodes indicating "Red Ocean" and "Blue Ocean" and an indicator node positioned accordingly.
 
 Determine if they're using Blue Ocean or Red Ocean strategy with evidence. Use a comparison table:
 
@@ -408,7 +402,7 @@ def add_custom_css():
             background-color: #2a70ba !important;
             color: white !important;
             border: none !important;
-            font-weight: 500 !important;
+            font-weight: bold !important;
         }
         .stButton button:hover {
             background-color: #1a5ba6 !important;
@@ -492,9 +486,7 @@ def call_claude_api(prompt, max_tokens=4000):
             message = client.messages.create(
                 model="claude-3-5-sonnet-20240620",
                 max_tokens=max_tokens,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ]
+                messages=[{"role": "user", "content": prompt}]
             )
             return message.content[0].text
         # Fall back to older API
@@ -513,7 +505,6 @@ def call_claude_api(prompt, max_tokens=4000):
 # Extract text from various file formats
 def extract_text_from_file(uploaded_file):
     file_extension = uploaded_file.name.split('.')[-1].lower()
-    
     if file_extension == 'pdf':
         return extract_text_from_pdf(uploaded_file)
     elif file_extension in ['ppt', 'pptx']:
@@ -528,16 +519,12 @@ def extract_text_from_file(uploaded_file):
 def extract_text_from_pdf(pdf_file):
     temp_dir = tempfile.TemporaryDirectory()
     temp_path = Path(temp_dir.name) / "pitch_deck.pdf"
-    
     with open(temp_path, "wb") as f:
         f.write(pdf_file.getvalue())
-    
     pdf_reader = PdfReader(temp_path)
     text = ""
-    
     for page in pdf_reader.pages:
         text += page.extract_text() + "\n\n"
-    
     temp_dir.cleanup()
     return text
 
@@ -545,22 +532,17 @@ def extract_text_from_pdf(pdf_file):
 def extract_text_from_pptx(pptx_file):
     try:
         import pptx
-        
         temp_dir = tempfile.TemporaryDirectory()
         temp_path = Path(temp_dir.name) / "pitch_deck.pptx"
-        
         with open(temp_path, "wb") as f:
             f.write(pptx_file.getvalue())
-        
         presentation = pptx.Presentation(temp_path)
         text = ""
-        
         for slide in presentation.slides:
             for shape in slide.shapes:
                 if hasattr(shape, "text"):
                     text += shape.text + "\n"
             text += "\n\n"
-        
         temp_dir.cleanup()
         return text
     except ImportError:
@@ -571,39 +553,46 @@ def extract_text_from_pptx(pptx_file):
 def extract_text_from_docx(docx_file):
     try:
         import docx
-        
         temp_dir = tempfile.TemporaryDirectory()
         temp_path = Path(temp_dir.name) / "pitch_deck.docx"
-        
         with open(temp_path, "wb") as f:
             f.write(docx_file.getvalue())
-        
         doc = docx.Document(temp_path)
         text = ""
-        
         for para in doc.paragraphs:
             text += para.text + "\n"
-        
         temp_dir.cleanup()
         return text
     except ImportError:
         st.error("Word processing library not available. Please install python-docx.")
         return None
 
+# Function to export evaluation results as a PDF
+def export_results_to_pdf(results):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    for section, content in results.items():
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, section.upper(), ln=True)
+        pdf.set_font("Arial", size=12)
+        pdf.multi_cell(0, 10, content)
+        pdf.ln(5)
+    pdf_bytes = pdf.output(dest='S').encode('latin-1')
+    return pdf_bytes
+
 # Function to evaluate the pitch deck
 def evaluate_pitch_deck(pitch_deck_text, analyze_design=False):
     results = {}
-    
     progress_bar = st.progress(0)
     status_text = st.empty()
-    
     # Determine how many analyses we'll run
     total_analyses = 6  # Base analyses including business model and expert panel
     if analyze_design:
         total_analyses += 1
     progress_step = 100 / total_analyses
     current_progress = 0
-    
+
     # Story Analysis
     status_text.text("Analyzing story elements...")
     story_prompt = STORY_PROMPT.format(pitch_deck_text=pitch_deck_text)
@@ -615,7 +604,7 @@ def evaluate_pitch_deck(pitch_deck_text, analyze_design=False):
     else:
         st.error("Failed to analyze story elements.")
         return None
-    
+
     # Startup Stage
     status_text.text("Identifying startup stage...")
     stage_prompt = STARTUP_STAGE_PROMPT.format(pitch_deck_text=pitch_deck_text)
@@ -627,7 +616,7 @@ def evaluate_pitch_deck(pitch_deck_text, analyze_design=False):
     else:
         st.error("Failed to identify startup stage.")
         return None
-    
+
     # Market Entry
     status_text.text("Evaluating market entry strategy...")
     market_prompt = MARKET_ENTRY_PROMPT.format(pitch_deck_text=pitch_deck_text)
@@ -639,7 +628,7 @@ def evaluate_pitch_deck(pitch_deck_text, analyze_design=False):
     else:
         st.error("Failed to evaluate market entry strategy.")
         return None
-    
+
     # Business Model
     status_text.text("Analyzing business model...")
     business_prompt = BUSINESS_MODEL_PROMPT.format(pitch_deck_text=pitch_deck_text)
@@ -651,7 +640,7 @@ def evaluate_pitch_deck(pitch_deck_text, analyze_design=False):
     else:
         st.error("Failed to analyze business model.")
         return None
-    
+
     # Expert Panel
     status_text.text("Gathering expert panel feedback...")
     expert_prompt = EXPERT_PANEL_PROMPT.format(pitch_deck_text=pitch_deck_text)
@@ -663,7 +652,7 @@ def evaluate_pitch_deck(pitch_deck_text, analyze_design=False):
     else:
         st.error("Failed to gather expert panel feedback.")
         return None
-    
+
     # Design Analysis (optional)
     if analyze_design:
         status_text.text("Analyzing design elements...")
@@ -673,7 +662,7 @@ def evaluate_pitch_deck(pitch_deck_text, analyze_design=False):
             results["design"] = design_analysis
             current_progress += progress_step
             progress_bar.progress(int(current_progress))
-    
+
     # Overall Feedback
     status_text.text("Generating overall feedback...")
     feedback_prompt = OVERALL_FEEDBACK_PROMPT.format(pitch_deck_text=pitch_deck_text)
@@ -686,13 +675,12 @@ def evaluate_pitch_deck(pitch_deck_text, analyze_design=False):
     else:
         st.error("Failed to generate overall feedback.")
         return None
-    
+
     return results
 
 # Function to display evaluation results in tabs
 def display_evaluation_results(results):
     st.title("Pitch Deck Evaluation")
-    
     # Define all possible tabs and their keys
     tab_definitions = [
         {"label": "📖 Story Analysis", "key": "story"},
@@ -703,18 +691,20 @@ def display_evaluation_results(results):
         {"label": "🎨 Design Analysis", "key": "design"},
         {"label": "📝 Overall Feedback", "key": "overall_feedback"}
     ]
-    
     # Filter to include only tabs with results
     available_tabs = [tab for tab in tab_definitions if tab["key"] in results]
     tab_labels = [tab["label"] for tab in available_tabs]
-    
     # Create tabs
     tabs = st.tabs(tab_labels)
-    
     # Populate each tab with content
     for i, tab in enumerate(available_tabs):
         with tabs[i]:
-            st.markdown(results[tab["key"]])
+            content = results[tab["key"]]
+            st.markdown(content)
+            # If this is the market entry tab, check for GraphViz DOT code and render it if available.
+            if tab["key"] == "market_entry" and "```dot" in content:
+                dot_code = content.split("```dot")[1].split("```")[0].strip()
+                st.graphviz_chart(dot_code)
 
 def main():
     # Sidebar
@@ -722,7 +712,6 @@ def main():
         st.image("https://img.icons8.com/fluency/96/000000/data-quality.png", width=80)
         st.title("PitchMe")
         st.markdown("Upload your pitch deck to get expert evaluation.")
-        
         with st.expander("ℹ️ About"):
             st.markdown("""
             This app uses AI to evaluate your pitch deck from multiple angles:
@@ -734,9 +723,8 @@ def main():
             - Design and visual elements (optional)
             - Overall recommendations
             
-            **The evaluation is powered by Claude 3.5 Sonnet**, an advanced AI model by Anthropic.
+            Contact us at Support@ProtoBots.ai
             """)
-        
         with st.expander("📋 How to use"):
             st.markdown("""
             1. Enter your startup's name (optional)
@@ -746,76 +734,62 @@ def main():
             5. Review the detailed analysis across various tabs
             6. Use the feedback to improve your pitch deck
             """)
-        
         st.divider()
         st.markdown("<div style='text-align: center; font-size: 0.9rem; opacity: 0.8; margin-top: 20px;'>Made by ProtoBots.ai</div>", unsafe_allow_html=True)
     
     # Use container to dynamically update content without page refresh
     main_container = st.container()
-    
-    # Main content area
     with main_container:
         if "evaluation_results" not in st.session_state:
             # Initial state - show upload form
-            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            # Replace the blank banner with grey horizontal lines and title/subtitle
+            st.markdown("<hr style='border: none; height: 2px; background: #ccc; box-shadow: 0 2px 2px -2px grey;'>", unsafe_allow_html=True)
             st.title("PitchMe")
             st.markdown("Get expert AI-powered feedback on your pitch deck to impress investors and secure funding.")
-            st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("<hr style='border: none; height: 2px; background: #ccc; box-shadow: 0 2px 2px -2px grey;'>", unsafe_allow_html=True)
             
             col1, col2 = st.columns([2, 1])
-            
             with col1:
                 st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
                 st.header("Upload Your Pitch Deck")
                 startup_name = st.text_input("Startup Name (Optional)", "")
-                
                 uploaded_file = st.file_uploader(
                     "Upload your pitch deck", 
                     type=["pdf", "ppt", "pptx", "doc", "docx"]
                 )
-                
                 analyze_design = st.checkbox("Also analyze design and visual elements", value=True)
-                
                 if uploaded_file is not None:
                     file_type = uploaded_file.name.split('.')[-1].lower()
                     st.write(f"File type detected: .{file_type}")
-                    
                     if st.button("Evaluate Pitch Deck", type="primary", use_container_width=True):
                         pitch_deck_text = extract_text_from_file(uploaded_file)
-                        
                         if not pitch_deck_text or len(pitch_deck_text) < 100:
                             st.error("Could not extract sufficient text from the file. Please make sure your file has textual content and not just images.")
                         else:
                             st.session_state.startup_name = startup_name
-                            
-                            # Create a placeholder for the progress UI
                             analysis_status = st.empty()
-                            
                             with analysis_status.container():
                                 with st.spinner("Analyzing your pitch deck..."):
-                                    # Evaluate the pitch deck
                                     results = evaluate_pitch_deck(pitch_deck_text, analyze_design)
                                     if results:
                                         st.session_state.evaluation_results = results
                                         st.success("Analysis complete! Displaying results...")
-                                        
-                                        # Add slight delay to ensure state update is complete
                                         time.sleep(1)
-                                        
-                                        # Clear the main container and display results
                                         main_container.empty()
                                         display_evaluation_results(results)
-                                        
-                                        # Add a button to start over
+                                        # Add download button to export analysis as PDF
+                                        pdf_bytes = export_results_to_pdf(st.session_state.evaluation_results)
+                                        st.download_button(
+                                            label="Export Analysis as PDF",
+                                            data=pdf_bytes,
+                                            file_name="PitchMe_Analysis.pdf",
+                                            mime="application/pdf"
+                                        )
                                         if st.button("Evaluate Another Pitch Deck", type="primary"):
-                                            # Clear the session state
                                             for key in list(st.session_state.keys()):
                                                 del st.session_state[key]
-                                            # Reload the page
                                             st.experimental_rerun()
-                
                 st.markdown("</div>", unsafe_allow_html=True)
-            
             with col2:
                 st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
                 st.header("What You'll Get")
@@ -829,7 +803,6 @@ def main():
                 - 📝 **Actionable Recommendations**
                 """)
                 st.markdown("</div>", unsafe_allow_html=True)
-                
                 st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
                 st.header("Supported Formats")
                 st.markdown("""
@@ -841,15 +814,10 @@ def main():
                 """)
                 st.markdown("</div>", unsafe_allow_html=True)
         else:
-            # Display evaluation results
             display_evaluation_results(st.session_state.evaluation_results)
-            
-            # Add a button to start over
             if st.button("Evaluate Another Pitch Deck", type="primary"):
-                # Clear the session state
                 for key in list(st.session_state.keys()):
                     del st.session_state[key]
-                # Reload the page
                 st.experimental_rerun()
 
 if __name__ == "__main__":
