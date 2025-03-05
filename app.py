@@ -571,13 +571,17 @@ def extract_text_from_docx(docx_file):
 def export_results_to_pdf(results):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
+    # Add a Unicode font. Make sure DejaVuSans.ttf is in your working directory.
+    pdf.add_font("DejaVu", "", "DejaVuSans.ttf", uni=True)
+    pdf.set_font("DejaVu", size=12)
+    
     for section, content in results.items():
-        pdf.set_font("Arial", 'B', 14)
+        pdf.set_font("DejaVu", 'B', 14)
         pdf.cell(0, 10, section.upper(), ln=True)
-        pdf.set_font("Arial", size=12)
+        pdf.set_font("DejaVu", size=12)
         pdf.multi_cell(0, 10, content)
         pdf.ln(5)
+    
     pdf_bytes = pdf.output(dest='S').encode('latin-1')
     return pdf_bytes
 
