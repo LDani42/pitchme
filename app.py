@@ -571,10 +571,14 @@ def extract_text_from_docx(docx_file):
 def export_results_to_pdf(results):
     pdf = FPDF()
     pdf.add_page()
-    # Register the normal font
-    pdf.add_font("DejaVu", "", "DejaVuSans.ttf", uni=True)
-    # Register the bold variant
-    pdf.add_font("DejaVu", "B", "DejaVuSans-Bold.ttf", uni=True)
+    # Build absolute paths for safety
+    import os
+    base_path = os.path.dirname(__file__)
+    font_path = os.path.join(base_path, "fonts", "DejaVuSans.ttf")
+    bold_font_path = os.path.join(base_path, "fonts", "DejaVuSans-Bold.ttf")
+    
+    pdf.add_font("DejaVu", "", font_path, uni=True)
+    pdf.add_font("DejaVu", "B", bold_font_path, uni=True)
     pdf.set_font("DejaVu", size=12)
     
     for section, content in results.items():
@@ -584,7 +588,8 @@ def export_results_to_pdf(results):
         pdf.multi_cell(0, 10, content)
         pdf.ln(5)
     
-    pdf_bytes = pdf.output(dest='S').encode('latin-1')
+    # Use errors='replace' to handle characters that can't be encoded in latin-1
+    pdf_bytes = pdf.output(dest='S').encode('latin-1', errors='replace')
     return pdf_bytes
 
 # Function to evaluate the pitch deck
