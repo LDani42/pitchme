@@ -5,8 +5,11 @@ import anthropic
 from PyPDF2 import PdfReader
 from pathlib import Path
 import time
-import base64
 from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 # This MUST be the very first Streamlit command
 st.set_page_config(
@@ -506,7 +509,7 @@ def add_custom_css():
 
 add_custom_css()
 
-# Function to encode company logo for display
+# Function to display company logo
 def get_company_logo():
     try:
         # Use the file path relative to the app.py file
@@ -515,3 +518,413 @@ def get_company_logo():
         st.error(f"Error loading logo: {str(e)}")
         # Fallback to text if image fails to load
         return st.markdown("<h3>ProtoBots.ai</h3>", unsafe_allow_html=True)
+
+# Create Anthropic client
+def get_anthropic_client():
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        try:
+            api_key = st.secrets["ANTHROPIC_API_KEY"]
+        except Exception as e:
+            st.error(f"Error accessing secrets: {str(e)}")
+            st.stop()
+    
+    # Try different initialization methods for compatibility
+    try:
+        return anthropic.Anthropic(api_key=api_key)
+    except Exception as e:
+        try:
+            return anthropic.Client(api_key=api_key)
+        except Exception as e:
+            st.error(f"Could not initialize Anthropic client: {str(e)}")
+            st.stop()
+
+client = get_anthropic_client()
+
+# Function to call Claude API
+def call_claude_api(prompt, max_tokens=4000):
+    try:
+        # Try newer API first
+        if hasattr(client, 'messages'):
+            message = client.messages.create(
+                model="claude-3-5-sonnet-20240620",
+                max_tokens=max_tokens,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return message.content[0].text
+        # Fall back to older API
+        else:
+            response = client.completion(
+                prompt=f"\n\nHuman: {prompt}\n\nAssistant:",
+                model="claude-3-5-sonnet-20240620",
+                max_tokens_to_sample=max_tokens,
+                stop_sequences=["\n\nHuman:"]
+            )
+            return response.completion
+    except Exception as e:
+        st.error(f"Error calling Claude API: {str(e)}")
+        return None
+
+# Extract text from various file formats
+def extract_text_from_file(uploaded_file):
+    file_extension = uploaded_file.name.split('.')[-1].lower()
+    if file_extension == 'pdf':
+        return extract_text_from_pdf(uploaded_file)
+    elif file_extension in ['ppt', 'pptx']:
+        return extract_text_from_pptx(uploaded_file)
+    elif file_extension in ['doc', 'docx']:
+        return extract_text_from_docx(uploaded_file)
+    else:
+        st.error(f"Unsupported file format: .{file_extension}")
+        return None
+
+# Extract text from PDF
+def extract_text_from_pdf(pdf_file):
+    temp_dir = tempfile.TemporaryDirectory()
+    temp_path = Path(temp_dir.name) / "pitch_deck.pdf"
+    with open(temp_path, "wb") as f:
+        f.write(pdf_file.getvalue())
+    pdf_reader = PdfReader(temp_path)
+    text = ""
+    for page in pdf_reader.pages:
+        text += page.extract_text() + "\n\n"
+    temp_dir.cleanup()
+    return text
+
+# Extract text from PowerPoint
+def extract_text_from_pptx(pptx_file):
+    try:
+        import pptx
+        temp_dir = tempfile.TemporaryDirectory()
+        temp_path = Path(temp_dir.name) / "pitch_deck.pptx"
+        with open(temp_path, "wb") as f:
+            f.write(pptx_file.getvalue())
+        presentation = pptx.Presentation(temp_path)
+        text = ""
+        for slide in presentation.slides:
+            for shape in slide.shapes:
+                if hasattr(shape, "text"):
+                    text += shape.text + "\n"
+            text += "\n\n"
+        temp_dir.cleanup()
+        return text
+    except ImportError:
+        st.error("PowerPoint processing library not available. Please install python-pptx.")
+        return None
+
+# Extract text from Word document
+def extract_text_from_docx(docx_file):
+    try:
+        import docx
+        temp_dir = tempfile.TemporaryDirectory()
+        temp_path = Path(temp_dir.name) / "pitch_deck.docx"
+        with open(temp_path, "wb") as f:
+            f.write(docx_file.getvalue())
+        doc = docx.Document(temp_path)
+        text = ""
+        for para in doc.paragraphs:
+            text += para.text + "\n"
+        temp_dir.cleanup()
+        return text
+    except ImportError:
+        st.error("Word processing library not available. Please install python-docx.")
+        return None
+
+# Function to export evaluation results as a PDF
+def export_results_to_pdf(results):
+    try:
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        styles = getSampleStyleSheet()
+        
+        # Add custom style for headers
+        styles.add(ParagraphStyle(
+            name='CustomHeading1',
+            parent=styles['Heading1'],
+            fontSize=16,
+            spaceAfter=12
+        ))
+        
+        content = []
+        
+        # Add title
+        content.append(Paragraph("PitchMe Analysis Report", styles['CustomHeading1']))
+        content.append(Spacer(1, 12))
+        
+        # Add each section
+        for section, section_content in results.items():
+            # Format section title
+            formatted_title = " ".join(word.capitalize() for word in section.replace("_", " ").split())
+            content.append(Paragraph(formatted_title, styles['Heading2']))
+            content.append(Spacer(1, 6))
+            
+            # Add plain text content - simple but reliable
+            paragraphs = section_content.split('\n\n')
+            for para in paragraphs:
+                if para.strip():
+                    content.append(Paragraph(para.replace("<", "&lt;").replace(">", "&gt;"), styles['Normal']))
+                    content.append(Spacer(1, 6))
+            
+            content.append(Spacer(1, 12))
+        
+        # Build the PDF
+        doc.build(content)
+        buffer.seek(0)
+        return buffer.getvalue()
+    except Exception as e:
+        st.error(f"Error creating PDF: {str(e)}")
+        # Return a simple error message as PDF
+        return b"Could not generate PDF report. See error in application."
+
+# Function to evaluate the pitch deck
+def evaluate_pitch_deck(pitch_deck_text, analyze_design=False):
+    results = {}
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    # Determine how many analyses we'll run
+    total_analyses = 6  # Base analyses including business model and expert panel
+    if analyze_design:
+        total_analyses += 1
+    progress_step = 100 / total_analyses
+    current_progress = 0
+
+    # Story Analysis
+    status_text.text("Analyzing story elements...")
+    story_prompt = STORY_PROMPT.format(pitch_deck_text=pitch_deck_text)
+    story_analysis = call_claude_api(story_prompt)
+    if story_analysis:
+        results["story"] = story_analysis
+        current_progress += progress_step
+        progress_bar.progress(int(current_progress))
+    else:
+        st.error("Failed to analyze story elements.")
+        return None
+
+    # Startup Stage
+    status_text.text("Identifying startup stage...")
+    stage_prompt = STARTUP_STAGE_PROMPT.format(pitch_deck_text=pitch_deck_text)
+    stage_analysis = call_claude_api(stage_prompt)
+    if stage_analysis:
+        results["startup_stage"] = stage_analysis
+        current_progress += progress_step
+        progress_bar.progress(int(current_progress))
+    else:
+        st.error("Failed to identify startup stage.")
+        return None
+
+    # Market Entry
+    status_text.text("Evaluating market entry strategy...")
+    market_prompt = MARKET_ENTRY_PROMPT.format(pitch_deck_text=pitch_deck_text)
+    market_analysis = call_claude_api(market_prompt)
+    if market_analysis:
+        results["market_entry"] = market_analysis
+        current_progress += progress_step
+        progress_bar.progress(int(current_progress))
+    else:
+        st.error("Failed to evaluate market entry strategy.")
+        return None
+
+    # Business Model
+    status_text.text("Analyzing business model...")
+    business_prompt = BUSINESS_MODEL_PROMPT.format(pitch_deck_text=pitch_deck_text)
+    business_analysis = call_claude_api(business_prompt, max_tokens=6000)
+    if business_analysis:
+        results["business_model"] = business_analysis
+        current_progress += progress_step
+        progress_bar.progress(int(current_progress))
+    else:
+        st.error("Failed to analyze business model.")
+        return None
+
+    # Expert Panel
+    status_text.text("Gathering expert panel feedback...")
+    expert_prompt = EXPERT_PANEL_PROMPT.format(pitch_deck_text=pitch_deck_text)
+    expert_analysis = call_claude_api(expert_prompt, max_tokens=6000)
+    if expert_analysis:
+        results["expert_panel"] = expert_analysis
+        current_progress += progress_step
+        progress_bar.progress(int(current_progress))
+    else:
+        st.error("Failed to gather expert panel feedback.")
+        return None
+
+    # Design Analysis (optional)
+    if analyze_design:
+        status_text.text("Analyzing design elements...")
+        design_prompt = DESIGN_ANALYSIS_PROMPT.format(pitch_deck_text=pitch_deck_text)
+        design_analysis = call_claude_api(design_prompt)
+        if design_analysis:
+            results["design"] = design_analysis
+            current_progress += progress_step
+            progress_bar.progress(int(current_progress))
+
+    # Overall Feedback
+    status_text.text("Generating overall feedback...")
+    feedback_prompt = OVERALL_FEEDBACK_PROMPT.format(pitch_deck_text=pitch_deck_text)
+    overall_feedback = call_claude_api(feedback_prompt)
+    if overall_feedback:
+        results["overall_feedback"] = overall_feedback
+        current_progress += progress_step
+        progress_bar.progress(100)  # Ensure we reach 100%
+        status_text.text("Analysis complete!")
+    else:
+        st.error("Failed to generate overall feedback.")
+        return None
+
+    return results
+
+# Function to display evaluation results in tabs
+def display_evaluation_results(results):
+    st.title("Pitch Deck Evaluation")
+    # Define all possible tabs and their keys
+    tab_definitions = [
+        {"label": "📖 Story Analysis", "key": "story"},
+        {"label": "🚀 Startup Stage", "key": "startup_stage"},
+        {"label": "🎯 Market Entry", "key": "market_entry"},
+        {"label": "💼 Business Model", "key": "business_model"},
+        {"label": "👥 Expert Panel", "key": "expert_panel"},
+        {"label": "🎨 Design Analysis", "key": "design"},
+        {"label": "📝 Overall Feedback", "key": "overall_feedback"}
+    ]
+    # Filter to include only tabs with results
+    available_tabs = [tab for tab in tab_definitions if tab["key"] in results]
+    tab_labels = [tab["label"] for tab in available_tabs]
+    # Create tabs
+    tabs = st.tabs(tab_labels)
+    # Populate each tab with content
+    for i, tab in enumerate(available_tabs):
+        with tabs[i]:
+            content = results[tab["key"]]
+            st.markdown(content)
+            
+            # Check for mermaid diagrams and render them
+            if "```mermaid" in content:
+                for mermaid_block in content.split("```mermaid"):
+                    if "```" in mermaid_block:
+                        mermaid_code = mermaid_block.split("```")[0].strip()
+                        if mermaid_code:
+                            st.markdown(f"```mermaid\n{mermaid_code}\n```")
+
+def main():
+    # Sidebar
+    with st.sidebar:
+        # Display company logo at the top
+        get_company_logo()
+        st.title("PitchMe")
+        st.markdown("Upload your pitch deck to get expert evaluation.")
+        with st.expander("ℹ️ About"):
+            st.markdown("""
+            This app uses AI to evaluate your pitch deck from multiple angles:
+            - Storytelling effectiveness
+            - Startup stage identification
+            - Market entry strategy analysis
+            - Business model canvas evaluation
+            - Expert panel feedback
+            - Design and visual elements (optional)
+            - Overall recommendations
+            
+            Contact us at Support@ProtoBots.ai
+            """)
+        with st.expander("📋 How to use"):
+            st.markdown("""
+            1. Enter your startup's name (optional)
+            2. Upload your pitch deck (PDF, PPT, PPTX, DOC, or DOCX)
+            3. Select whether to analyze design elements
+            4. Click "Evaluate Pitch Deck"
+            5. Review the detailed analysis across various tabs
+            6. Use the feedback to improve your pitch deck
+            """)
+        st.divider()
+        st.markdown("<div style='text-align: center; font-size: 0.9rem; opacity: 0.8; margin-top: 20px;'>Made by ProtoBots.ai</div>", unsafe_allow_html=True)
+    
+    # Use container to dynamically update content without page refresh
+    main_container = st.container()
+    with main_container:
+        if "evaluation_results" not in st.session_state:
+            # Initial state - show upload form
+            # Replace the blank banner with grey horizontal lines and title/subtitle
+            st.markdown("<hr style='border: none; height: 2px; background: #ccc; box-shadow: 0 2px 2px -2px grey;'>", unsafe_allow_html=True)
+            st.title("PitchMe")
+            st.markdown("Get expert AI-powered feedback on your pitch deck to impress investors and secure funding.")
+            st.markdown("<hr style='border: none; height: 2px; background: #ccc; box-shadow: 0 2px 2px -2px grey;'>", unsafe_allow_html=True)
+            
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                st.markdown("<div class='upload-section'>", unsafe_allow_html=True)
+                st.header("Upload Your Pitch Deck")
+                startup_name = st.text_input("Startup Name (Optional)", "")
+                uploaded_file = st.file_uploader(
+                    "Upload your pitch deck", 
+                    type=["pdf", "ppt", "pptx", "doc", "docx"]
+                )
+                analyze_design = st.checkbox("Also analyze design and visual elements", value=True)
+                if uploaded_file is not None:
+                    file_type = uploaded_file.name.split('.')[-1].lower()
+                    st.write(f"File type detected: .{file_type}")
+                    st.markdown("""<style>
+                    div.stButton > button {
+                        font-weight: bold !important;
+                        color: white !important;
+                    }
+                    </style>""", unsafe_allow_html=True)
+                    if st.button("Evaluate Pitch Deck", type="primary", use_container_width=True):
+                        pitch_deck_text = extract_text_from_file(uploaded_file)
+                        if not pitch_deck_text or len(pitch_deck_text) < 100:
+                            st.error("Could not extract sufficient text from the file. Please make sure your file has textual content and not just images.")
+                        else:
+                            st.session_state.startup_name = startup_name
+                            analysis_status = st.empty()
+                            with analysis_status.container():
+                                with st.spinner("Analyzing your pitch deck..."):
+                                    results = evaluate_pitch_deck(pitch_deck_text, analyze_design)
+                                    if results:
+                                        st.session_state.evaluation_results = results
+                                        st.success("Analysis complete! Displaying results...")
+                                        time.sleep(1)
+                                        main_container.empty()
+                                        display_evaluation_results(results)
+                                        # Add download button to export analysis as PDF
+                                        pdf_bytes = export_results_to_pdf(st.session_state.evaluation_results)
+                                        st.download_button(
+                                            label="Export Analysis as PDF",
+                                            data=pdf_bytes,
+                                            file_name="PitchMe_Analysis.pdf",
+                                            mime="application/pdf"
+                                        )
+                                        if st.button("Evaluate Another Pitch Deck", type="primary"):
+                                            for key in list(st.session_state.keys()):
+                                                del st.session_state[key]
+                                            st.experimental_rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
+            with col2:
+                st.markdown("<div class='features-section'>", unsafe_allow_html=True)
+                st.header("What You'll Get")
+                st.markdown("""
+                - 📖 **Story Analysis**
+                - 🚀 **Startup Stage Identification**
+                - 🎯 **Market Entry Strategy Assessment**
+                - 💼 **Business Model Evaluation**
+                - 👥 **Expert Panel Feedback**
+                - 🎨 **Design Analysis** (optional)
+                - 📝 **Actionable Recommendations**
+                """)
+                st.markdown("</div>", unsafe_allow_html=True)
+                st.markdown("<div class='formats-section'>", unsafe_allow_html=True)
+                st.header("Supported Formats")
+                st.markdown("""
+                We support multiple presentation formats:
+                
+                - **PDF** (.pdf)
+                - **PowerPoint** (.ppt, .pptx)
+                - **Word Documents** (.doc, .docx)
+                """)
+                st.markdown("</div>", unsafe_allow_html=True)
+        else:
+            display_evaluation_results(st.session_state.evaluation_results)
+            if st.button("Evaluate Another Pitch Deck", type="primary"):
+                for key in list(st.session_state.keys()):
+                    del st.session_state[key]
+                st.experimental_rerun()
+
+if __name__ == "__main__":
+    main()
