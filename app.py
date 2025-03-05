@@ -929,7 +929,7 @@ def main():
                                         if st.button("Evaluate Another Pitch Deck", type="primary"):
                                             for key in list(st.session_state.keys()):
                                                 del st.session_state[key]
-                                            st.experimental_rerun()
+                                            st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
             with col2:
                 st.markdown("<div class='features-section'>", unsafe_allow_html=True)
