@@ -5,7 +5,7 @@ import anthropic
 from PyPDF2 import PdfReader
 from pathlib import Path
 import time
-from fpdf import FPDF
+import base64
 from io import BytesIO
 
 # This MUST be the very first Streamlit command
@@ -114,12 +114,12 @@ Red Ocean Strategy:
 Provide your response using clear markdown formatting with visual elements:
 
 ## 🎯 Customer Segment Analysis
-Create a target diagram using GraphViz DOT language to represent how well they've identified their critical customer segment.
+Create a target diagram using mermaid syntax to represent how well they've identified their critical customer segment.
 
 Evaluate how well they've identified their critical customer segment, using bullet points for clarity and bold text for key insights.
 
 ## 🌊 Strategy Classification
-Generate a GraphViz DOT code snippet that visually represents the position on the Blue Ocean vs Red Ocean spectrum. The diagram should be a horizontal flow with nodes indicating "Red Ocean" and "Blue Ocean" and an indicator node positioned accordingly.
+Generate a mermaid diagram that visually represents the position on the Blue Ocean vs Red Ocean spectrum. The diagram should be a horizontal flow with nodes indicating "Red Ocean" and "Blue Ocean" and an indicator node positioned accordingly.
 
 Determine if they're using Blue Ocean or Red Ocean strategy with evidence. Use a comparison table:
 
@@ -188,7 +188,7 @@ End with a visual summary table showing scores for all elements:
 | ------- | ----- | ----------- |
 | [Element] | [Score] | [Brief comment] |
 
-Also create a radar chart representation using ASCII art to visualize the scores across all elements.
+Also create a radar chart representation using mermaid syntax to visualize the scores across all elements.
 
 # Pitch Deck Content
 {pitch_deck_text}
@@ -325,7 +325,7 @@ Organize recommendations by category:
 
 (Repeat for Typography, Charts/Diagrams, Image Selection, Visual Storytelling)
 
-End with a visual "before/after" concept using ASCII art to illustrate key improvements.
+End with a visual "before/after" concept using mermaid syntax to illustrate key improvements.
 
 Use emojis, bold text, and clear formatting to make the content visually engaging.
 
@@ -333,15 +333,15 @@ Use emojis, bold text, and clear formatting to make the content visually engagin
 {pitch_deck_text}
 """
 
-# Add CSS for styling
+# Add CSS for styling, with dark mode support
 def add_custom_css():
     st.markdown("""
     <style>
         /* Basic styling */
-        h1, h2, h3 { color: #1a365d; margin-bottom: 1rem; }
-        p, li, div { color: #333333; line-height: 1.6; }
+        h1, h2, h3 { margin-bottom: 1rem; }
+        p, li, div { line-height: 1.6; }
         
-        /* Make sure all text in sidebar is white */
+        /* Sidebar styling */
         [data-testid="stSidebar"] {
             background-color: #1a365d;
             padding-top: 1rem;
@@ -368,33 +368,18 @@ def add_custom_css():
             border-bottom: 1px solid rgba(255,255,255,0.2);
         }
         
-        /* Card styling */
-        .custom-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-        
         /* Tabs styling */
         .stTabs [data-baseweb="tab-list"] {
             gap: 0px;
             border-bottom: 1px solid #e2e8f0;
         }
         .stTabs [data-baseweb="tab"] {
-            background-color: #f8fafc;
             border-radius: 4px 4px 0px 0px;
             padding: 10px 16px;
-            color: #475569;
             font-weight: 500;
             border: 1px solid #e2e8f0;
             border-bottom: none;
             margin-right: 4px;
-        }
-        .stTabs [aria-selected="true"] {
-            background-color: #2a70ba !important;
-            color: white !important;
         }
         
         /* Button styling */
@@ -410,11 +395,9 @@ def add_custom_css():
         
         /* Make blockquotes stand out */
         blockquote {
-            background-color: #f8f9fa;
             border-left: 5px solid #2a70ba;
             padding: 10px 15px;
             margin: 10px 0;
-            color: #333333;
         }
         
         /* Table styling */
@@ -423,28 +406,95 @@ def add_custom_css():
             width: 100%;
             margin: 16px 0;
         }
-        th {
-            background-color: #edf2f7;
-            border: 1px solid #cbd5e0;
-            padding: 8px 12px;
-            text-align: left;
-            color: #1a365d;
-        }
-        td {
-            border: 1px solid #cbd5e0;
-            padding: 8px 12px;
-        }
-        tr:nth-child(even) {
-            background-color: #f8f9fa;
+        
+        /* Responsive design adjustments */
+        @media (max-width: 768px) {
+            .row-widget.stButton {
+                width: 100%;
+            }
+            
+            /* Make tables scrollable on mobile */
+            .stTable {
+                overflow-x: auto;
+                display: block;
+            }
+            
+            /* Better spacing for mobile */
+            .block-container {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
         }
         
-        /* Code blocks */
-        pre {
-            background-color: #f1f5f9;
-            border-radius: 6px;
-            padding: 16px;
-            border: 1px solid #e2e8f0;
-            overflow-x: auto;
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .stApp {
+                background-color: #0e1117;
+            }
+            
+            p, li, span, div {
+                color: #f9fafb !important;
+            }
+            
+            h1, h2, h3, h4, h5, h6 {
+                color: #e5e7eb !important;
+            }
+            
+            .stTabs [data-baseweb="tab"] {
+                background-color: #1e2530;
+                color: #e5e7eb;
+                border-color: #4b5563;
+            }
+            
+            table {
+                border-color: #4b5563;
+            }
+            
+            th, td {
+                border-color: #4b5563;
+                color: #e5e7eb;
+            }
+            
+            blockquote {
+                background-color: #1e2530;
+                color: #e5e7eb;
+            }
+        }
+        
+        /* Upload section styling */
+        .upload-section {
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        /* Features section styling */
+        .features-section {
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        /* Supported formats section styling */
+        .formats-section {
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        /* Dark mode styling for sections */
+        @media (prefers-color-scheme: dark) {
+            .upload-section, .features-section, .formats-section {
+                background-color: #1e2530;
+            }
+        }
+        
+        /* Light mode styling for sections */
+        @media (prefers-color-scheme: light) {
+            .upload-section, .features-section, .formats-section {
+                background-color: white;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
         }
         
         /* Emoji sizing */
@@ -456,380 +506,14 @@ def add_custom_css():
 
 add_custom_css()
 
-# Create Anthropic client
-def get_anthropic_client():
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        try:
-            api_key = st.secrets["ANTHROPIC_API_KEY"]
-        except Exception as e:
-            st.error(f"Error accessing secrets: {str(e)}")
-            st.stop()
+# Function to encode company logo for display
+def get_company_logo():
+    # Base64 encoded logo (replace this with your actual logo)
+    logo_base64 = """
+    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""""
     
-    # Try different initialization methods for compatibility
-    try:
-        return anthropic.Anthropic(api_key=api_key)
-    except Exception as e:
-        try:
-            return anthropic.Client(api_key=api_key)
-        except Exception as e:
-            st.error(f"Could not initialize Anthropic client: {str(e)}")
-            st.stop()
-
-client = get_anthropic_client()
-
-# Function to call Claude API
-def call_claude_api(prompt, max_tokens=4000):
-    try:
-        # Try newer API first
-        if hasattr(client, 'messages'):
-            message = client.messages.create(
-                model="claude-3-5-sonnet-20240620",
-                max_tokens=max_tokens,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            return message.content[0].text
-        # Fall back to older API
-        else:
-            response = client.completion(
-                prompt=f"\n\nHuman: {prompt}\n\nAssistant:",
-                model="claude-3-5-sonnet-20240620",
-                max_tokens_to_sample=max_tokens,
-                stop_sequences=["\n\nHuman:"]
-            )
-            return response.completion
-    except Exception as e:
-        st.error(f"Error calling Claude API: {str(e)}")
-        return None
-
-# Extract text from various file formats
-def extract_text_from_file(uploaded_file):
-    file_extension = uploaded_file.name.split('.')[-1].lower()
-    if file_extension == 'pdf':
-        return extract_text_from_pdf(uploaded_file)
-    elif file_extension in ['ppt', 'pptx']:
-        return extract_text_from_pptx(uploaded_file)
-    elif file_extension in ['doc', 'docx']:
-        return extract_text_from_docx(uploaded_file)
-    else:
-        st.error(f"Unsupported file format: .{file_extension}")
-        return None
-
-# Extract text from PDF
-def extract_text_from_pdf(pdf_file):
-    temp_dir = tempfile.TemporaryDirectory()
-    temp_path = Path(temp_dir.name) / "pitch_deck.pdf"
-    with open(temp_path, "wb") as f:
-        f.write(pdf_file.getvalue())
-    pdf_reader = PdfReader(temp_path)
-    text = ""
-    for page in pdf_reader.pages:
-        text += page.extract_text() + "\n\n"
-    temp_dir.cleanup()
-    return text
-
-# Extract text from PowerPoint
-def extract_text_from_pptx(pptx_file):
-    try:
-        import pptx
-        temp_dir = tempfile.TemporaryDirectory()
-        temp_path = Path(temp_dir.name) / "pitch_deck.pptx"
-        with open(temp_path, "wb") as f:
-            f.write(pptx_file.getvalue())
-        presentation = pptx.Presentation(temp_path)
-        text = ""
-        for slide in presentation.slides:
-            for shape in slide.shapes:
-                if hasattr(shape, "text"):
-                    text += shape.text + "\n"
-            text += "\n\n"
-        temp_dir.cleanup()
-        return text
-    except ImportError:
-        st.error("PowerPoint processing library not available. Please install python-pptx.")
-        return None
-
-# Extract text from Word document
-def extract_text_from_docx(docx_file):
-    try:
-        import docx
-        temp_dir = tempfile.TemporaryDirectory()
-        temp_path = Path(temp_dir.name) / "pitch_deck.docx"
-        with open(temp_path, "wb") as f:
-            f.write(docx_file.getvalue())
-        doc = docx.Document(temp_path)
-        text = ""
-        for para in doc.paragraphs:
-            text += para.text + "\n"
-        temp_dir.cleanup()
-        return text
-    except ImportError:
-        st.error("Word processing library not available. Please install python-docx.")
-        return None
-
-# Function to export evaluation results as a PDF
-def export_results_to_pdf(results):
-    pdf = FPDF()
-    pdf.add_page()
-    # Build absolute paths for safety
-    import os
-    base_path = os.path.dirname(__file__)
-    font_path = os.path.join(base_path, "fonts", "DejaVuSans.ttf")
-    bold_font_path = os.path.join(base_path, "fonts", "DejaVuSans-Bold.ttf")
-    
-    pdf.add_font("DejaVu", "", font_path, uni=True)
-    pdf.add_font("DejaVu", "B", bold_font_path, uni=True)
-    pdf.set_font("DejaVu", size=12)
-    
-    for section, content in results.items():
-        pdf.set_font("DejaVu", 'B', 14)
-        pdf.cell(0, 10, section.upper(), ln=True)
-        pdf.set_font("DejaVu", size=12)
-        pdf.multi_cell(0, 10, content)
-        pdf.ln(5)
-    
-    # Use errors='replace' to handle characters that can't be encoded in latin-1
-    pdf_bytes = pdf.output(dest='S').encode('latin-1', errors='replace')
-    return pdf_bytes
-
-# Function to evaluate the pitch deck
-def evaluate_pitch_deck(pitch_deck_text, analyze_design=False):
-    results = {}
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    # Determine how many analyses we'll run
-    total_analyses = 6  # Base analyses including business model and expert panel
-    if analyze_design:
-        total_analyses += 1
-    progress_step = 100 / total_analyses
-    current_progress = 0
-
-    # Story Analysis
-    status_text.text("Analyzing story elements...")
-    story_prompt = STORY_PROMPT.format(pitch_deck_text=pitch_deck_text)
-    story_analysis = call_claude_api(story_prompt)
-    if story_analysis:
-        results["story"] = story_analysis
-        current_progress += progress_step
-        progress_bar.progress(int(current_progress))
-    else:
-        st.error("Failed to analyze story elements.")
-        return None
-
-    # Startup Stage
-    status_text.text("Identifying startup stage...")
-    stage_prompt = STARTUP_STAGE_PROMPT.format(pitch_deck_text=pitch_deck_text)
-    stage_analysis = call_claude_api(stage_prompt)
-    if stage_analysis:
-        results["startup_stage"] = stage_analysis
-        current_progress += progress_step
-        progress_bar.progress(int(current_progress))
-    else:
-        st.error("Failed to identify startup stage.")
-        return None
-
-    # Market Entry
-    status_text.text("Evaluating market entry strategy...")
-    market_prompt = MARKET_ENTRY_PROMPT.format(pitch_deck_text=pitch_deck_text)
-    market_analysis = call_claude_api(market_prompt)
-    if market_analysis:
-        results["market_entry"] = market_analysis
-        current_progress += progress_step
-        progress_bar.progress(int(current_progress))
-    else:
-        st.error("Failed to evaluate market entry strategy.")
-        return None
-
-    # Business Model
-    status_text.text("Analyzing business model...")
-    business_prompt = BUSINESS_MODEL_PROMPT.format(pitch_deck_text=pitch_deck_text)
-    business_analysis = call_claude_api(business_prompt, max_tokens=6000)
-    if business_analysis:
-        results["business_model"] = business_analysis
-        current_progress += progress_step
-        progress_bar.progress(int(current_progress))
-    else:
-        st.error("Failed to analyze business model.")
-        return None
-
-    # Expert Panel
-    status_text.text("Gathering expert panel feedback...")
-    expert_prompt = EXPERT_PANEL_PROMPT.format(pitch_deck_text=pitch_deck_text)
-    expert_analysis = call_claude_api(expert_prompt, max_tokens=6000)
-    if expert_analysis:
-        results["expert_panel"] = expert_analysis
-        current_progress += progress_step
-        progress_bar.progress(int(current_progress))
-    else:
-        st.error("Failed to gather expert panel feedback.")
-        return None
-
-    # Design Analysis (optional)
-    if analyze_design:
-        status_text.text("Analyzing design elements...")
-        design_prompt = DESIGN_ANALYSIS_PROMPT.format(pitch_deck_text=pitch_deck_text)
-        design_analysis = call_claude_api(design_prompt)
-        if design_analysis:
-            results["design"] = design_analysis
-            current_progress += progress_step
-            progress_bar.progress(int(current_progress))
-
-    # Overall Feedback
-    status_text.text("Generating overall feedback...")
-    feedback_prompt = OVERALL_FEEDBACK_PROMPT.format(pitch_deck_text=pitch_deck_text)
-    overall_feedback = call_claude_api(feedback_prompt)
-    if overall_feedback:
-        results["overall_feedback"] = overall_feedback
-        current_progress += progress_step
-        progress_bar.progress(100)  # Ensure we reach 100%
-        status_text.text("Analysis complete!")
-    else:
-        st.error("Failed to generate overall feedback.")
-        return None
-
-    return results
-
-# Function to display evaluation results in tabs
-def display_evaluation_results(results):
-    st.title("Pitch Deck Evaluation")
-    # Define all possible tabs and their keys
-    tab_definitions = [
-        {"label": "📖 Story Analysis", "key": "story"},
-        {"label": "🚀 Startup Stage", "key": "startup_stage"},
-        {"label": "🎯 Market Entry", "key": "market_entry"},
-        {"label": "💼 Business Model", "key": "business_model"},
-        {"label": "👥 Expert Panel", "key": "expert_panel"},
-        {"label": "🎨 Design Analysis", "key": "design"},
-        {"label": "📝 Overall Feedback", "key": "overall_feedback"}
-    ]
-    # Filter to include only tabs with results
-    available_tabs = [tab for tab in tab_definitions if tab["key"] in results]
-    tab_labels = [tab["label"] for tab in available_tabs]
-    # Create tabs
-    tabs = st.tabs(tab_labels)
-    # Populate each tab with content
-    for i, tab in enumerate(available_tabs):
-        with tabs[i]:
-            content = results[tab["key"]]
-            st.markdown(content)
-            # If this is the market entry tab, check for GraphViz DOT code and render it if available.
-            if tab["key"] == "market_entry" and "```dot" in content:
-                dot_code = content.split("```dot")[1].split("```")[0].strip()
-                st.graphviz_chart(dot_code)
-
-def main():
-    # Sidebar
-    with st.sidebar:
-        st.image("https://img.icons8.com/fluency/96/000000/data-quality.png", width=80)
-        st.title("PitchMe")
-        st.markdown("Upload your pitch deck to get expert evaluation.")
-        with st.expander("ℹ️ About"):
-            st.markdown("""
-            This app uses AI to evaluate your pitch deck from multiple angles:
-            - Storytelling effectiveness
-            - Startup stage identification
-            - Market entry strategy analysis
-            - Business model canvas evaluation
-            - Expert panel feedback
-            - Design and visual elements (optional)
-            - Overall recommendations
-            
-            Contact us at Support@ProtoBots.ai
-            """)
-        with st.expander("📋 How to use"):
-            st.markdown("""
-            1. Enter your startup's name (optional)
-            2. Upload your pitch deck (PDF, PPT, PPTX, DOC, or DOCX)
-            3. Select whether to analyze design elements
-            4. Click "Evaluate Pitch Deck"
-            5. Review the detailed analysis across various tabs
-            6. Use the feedback to improve your pitch deck
-            """)
-        st.divider()
-        st.markdown("<div style='text-align: center; font-size: 0.9rem; opacity: 0.8; margin-top: 20px;'>Made by ProtoBots.ai</div>", unsafe_allow_html=True)
-    
-    # Use container to dynamically update content without page refresh
-    main_container = st.container()
-    with main_container:
-        if "evaluation_results" not in st.session_state:
-            # Initial state - show upload form
-            # Replace the blank banner with grey horizontal lines and title/subtitle
-            st.markdown("<hr style='border: none; height: 2px; background: #ccc; box-shadow: 0 2px 2px -2px grey;'>", unsafe_allow_html=True)
-            st.title("PitchMe")
-            st.markdown("Get expert AI-powered feedback on your pitch deck to impress investors and secure funding.")
-            st.markdown("<hr style='border: none; height: 2px; background: #ccc; box-shadow: 0 2px 2px -2px grey;'>", unsafe_allow_html=True)
-            
-            col1, col2 = st.columns([2, 1])
-            with col1:
-                st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-                st.header("Upload Your Pitch Deck")
-                startup_name = st.text_input("Startup Name (Optional)", "")
-                uploaded_file = st.file_uploader(
-                    "Upload your pitch deck", 
-                    type=["pdf", "ppt", "pptx", "doc", "docx"]
-                )
-                analyze_design = st.checkbox("Also analyze design and visual elements", value=True)
-                if uploaded_file is not None:
-                    file_type = uploaded_file.name.split('.')[-1].lower()
-                    st.write(f"File type detected: .{file_type}")
-                    if st.button("Evaluate Pitch Deck", type="primary", use_container_width=True):
-                        pitch_deck_text = extract_text_from_file(uploaded_file)
-                        if not pitch_deck_text or len(pitch_deck_text) < 100:
-                            st.error("Could not extract sufficient text from the file. Please make sure your file has textual content and not just images.")
-                        else:
-                            st.session_state.startup_name = startup_name
-                            analysis_status = st.empty()
-                            with analysis_status.container():
-                                with st.spinner("Analyzing your pitch deck..."):
-                                    results = evaluate_pitch_deck(pitch_deck_text, analyze_design)
-                                    if results:
-                                        st.session_state.evaluation_results = results
-                                        st.success("Analysis complete! Displaying results...")
-                                        time.sleep(1)
-                                        main_container.empty()
-                                        display_evaluation_results(results)
-                                        # Add download button to export analysis as PDF
-                                        pdf_bytes = export_results_to_pdf(st.session_state.evaluation_results)
-                                        st.download_button(
-                                            label="Export Analysis as PDF",
-                                            data=pdf_bytes,
-                                            file_name="PitchMe_Analysis.pdf",
-                                            mime="application/pdf"
-                                        )
-                                        if st.button("Evaluate Another Pitch Deck", type="primary"):
-                                            for key in list(st.session_state.keys()):
-                                                del st.session_state[key]
-                                            st.experimental_rerun()
-                st.markdown("</div>", unsafe_allow_html=True)
-            with col2:
-                st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-                st.header("What You'll Get")
-                st.markdown("""
-                - 📖 **Story Analysis**
-                - 🚀 **Startup Stage Identification**
-                - 🎯 **Market Entry Strategy Assessment**
-                - 💼 **Business Model Evaluation**
-                - 👥 **Expert Panel Feedback**
-                - 🎨 **Design Analysis** (optional)
-                - 📝 **Actionable Recommendations**
-                """)
-                st.markdown("</div>", unsafe_allow_html=True)
-                st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-                st.header("Supported Formats")
-                st.markdown("""
-                We support multiple presentation formats:
-                
-                - **PDF** (.pdf)
-                - **PowerPoint** (.ppt, .pptx)
-                - **Word Documents** (.doc, .docx)
-                """)
-                st.markdown("</div>", unsafe_allow_html=True)
-        else:
-            display_evaluation_results(st.session_state.evaluation_results)
-            if st.button("Evaluate Another Pitch Deck", type="primary"):
-                for key in list(st.session_state.keys()):
-                    del st.session_state[key]
-                st.experimental_rerun()
-
-if __name__ == "__main__":
-    main()
+    return f"""
+    <div style="text-align: center; padding: 10px;">
+        <img src="data:image/png;base64,{logo_base64}" width="80" alt="Company Logo">
+    </div>
+    """
