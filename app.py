@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import tempfile
 import anthropic
+from streamlit_mermaid import st_mermaid
 from PyPDF2 import PdfReader
 from pathlib import Path
 import time
@@ -796,36 +797,48 @@ def display_evaluation_results(results):
         with tabs[i]:
             content = results[tab["key"]]
             
-            # Split content to handle mermaid blocks separately
-            parts = []
-            is_mermaid = False
-            mermaid_content = ""
+            # Regular markdown content (without mermaid)
+            markdown_parts = []
             
-            # Split the markdown by lines to process mermaid blocks
+            # Extract mermaid diagrams
+            mermaid_blocks = []
+            in_mermaid = False
+            current_mermaid = []
+            
             for line in content.split('\n'):
                 if line.strip() == "```mermaid":
-                    # Start of mermaid block
-                    if parts:
-                        # Display accumulated markdown content
-                        st.markdown('\n'.join(parts))
-                        parts = []
-                    is_mermaid = True
-                    mermaid_content = ""
-                elif line.strip() == "```" and is_mermaid:
-                    # End of mermaid block
-                    is_mermaid = False
-                    # Display the mermaid diagram
-                    st.markdown(f"```mermaid\n{mermaid_content}\n```")
-                elif is_mermaid:
-                    # Accumulate mermaid content
-                    mermaid_content += line + '\n'
+                    in_mermaid = True
+                elif line.strip() == "```" and in_mermaid:
+                    in_mermaid = False
+                    mermaid_blocks.append('\n'.join(current_mermaid))
+                    current_mermaid = []
+                    # Add a placeholder for the mermaid diagram
+                    markdown_parts.append("[MERMAID_DIAGRAM_" + str(len(mermaid_blocks) - 1) + "]")
+                elif in_mermaid:
+                    current_mermaid.append(line)
                 else:
-                    # Regular markdown content
-                    parts.append(line)
+                    markdown_parts.append(line)
             
-            # Display any remaining content
-            if parts:
-                st.markdown('\n'.join(parts))
+            # Join the markdown parts into a single string
+            markdown_content = '\n'.join(markdown_parts)
+            
+            # Split by mermaid diagram placeholders
+            markdown_segments = markdown_content.split("[MERMAID_DIAGRAM_")
+            
+            # Render first segment
+            if markdown_segments[0]:
+                st.markdown(markdown_segments[0])
+            
+            # Render the rest with mermaid diagrams
+            for i, segment in enumerate(markdown_segments[1:], 0):
+                idx, rest = segment.split("]", 1)
+                
+                # Render the mermaid diagram
+                st_mermaid(mermaid_blocks[int(idx)])
+                
+                # Render the rest of the markdown
+                if rest:
+                    st.markdown(rest)
 
 def main():
     # Sidebar
